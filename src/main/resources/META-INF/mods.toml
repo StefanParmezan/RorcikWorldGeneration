@@ -1,0 +1,24 @@
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="All Rights Reserved"
+
+[[mods]]
+modId="rwg"
+version="${mod_version}"
+displayName="Rorcik World Generation"
+authors="Rorcik, StefanParmezan"
+description='''A comprehensive world generation overhaul for Minecraft 1.20.1, featuring realistic terrain smoothing, custom biomes, advanced ore distribution, and structural physics integration.'''
+
+[[dependencies.rwg]]
+modId="forge"
+mandatory=true
+versionRange="${forge_version_range}"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.rwg]]
+modId="minecraft"
+mandatory=true
+versionRange="${minecraft_version_range}"
+ordering="NONE"
+side="BOTH"
