@@ -23,7 +23,6 @@ public class RwgBlocks {
                     .mapColor(MapColor.DIRT)
                     .sound(SoundType.GRAVEL)
                     .strength(0.5F)));
-                    
 
     public static final RegistryObject<Item> DIRT_SLAB_ITEM = ITEMS.register("dirt_slab",
             () -> new BlockItem(DIRT_SLAB.get(), new Item.Properties()));
@@ -34,7 +33,6 @@ public class RwgBlocks {
                     .sound(SoundType.GRAVEL)
                     .strength(0.6F)
                     .randomTicks()));
-                    
 
     public static final RegistryObject<Item> GRASS_SLAB_ITEM = ITEMS.register("grass_slab",
             () -> new BlockItem(GRASS_SLAB.get(), new Item.Properties()));
@@ -44,7 +42,6 @@ public class RwgBlocks {
                     .mapColor(MapColor.DIRT)
                     .sound(SoundType.GRAVEL)
                     .strength(0.65F)));
-                    
 
     public static final RegistryObject<Item> DIRT_PATH_SLAB_ITEM = ITEMS.register("dirt_path_slab",
             () -> new BlockItem(DIRT_PATH_SLAB.get(), new Item.Properties()));
@@ -63,7 +60,6 @@ public class RwgBlocks {
                     .mapColor(MapColor.DIRT)
                     .sound(SoundType.GRAVEL)
                     .strength(0.5F)));
-                    
 
     public static final RegistryObject<Item> COARSE_DIRT_SLAB_ITEM = ITEMS.register("coarse_dirt_slab",
             () -> new BlockItem(COARSE_DIRT_SLAB.get(), new Item.Properties()));
