@@ -1,4 +1,7 @@
 {
   "block.rwg.dirt_slab": "Плита из земли",
-  "block.rwg.grass_slab": "Плита из дёрна"
+  "block.rwg.grass_slab": "Плита из дёрна",
+  "block.rwg.dirt_path_slab": "Плита из тропинки",
+  "block.rwg.podzol_slab": "Плита из подзола",
+  "block.rwg.coarse_dirt_slab": "Плита из каменистой земли"
 }

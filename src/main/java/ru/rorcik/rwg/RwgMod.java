@@ -9,12 +9,12 @@ import net.minecraft.world.level.GrassColor;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.slf4j.Logger;
 
 @Mod(RwgMod.MODID)
@@ -46,6 +46,7 @@ public class RwgMod {
                 Minecraft mc = Minecraft.getInstance();
 
                 ItemBlockRenderTypes.setRenderLayer(RwgBlocks.GRASS_SLAB.get(), RenderType.cutoutMipped());
+                ItemBlockRenderTypes.setRenderLayer(RwgBlocks.DIRT_PATH_SLAB.get(), RenderType.cutoutMipped());
 
                 mc.getBlockColors().register((state, level, pos, tintIndex) -> {
                     if (level != null && pos != null) {

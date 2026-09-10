@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "rwg:dirt_slab",
+    "rwg:grass_slab",
+    "rwg:dirt_path_slab",
+    "rwg:podzol_slab",
+    "rwg:coarse_dirt_slab"
+  ]
+}
