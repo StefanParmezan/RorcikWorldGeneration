@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["XXX"],
+  "key": {
+    "X": {
+      "item": "minecraft:podzol"
+    }
+  },
+  "result": {
+    "item": "rwg:podzol_slab",
+    "count": 6
+  }
+}

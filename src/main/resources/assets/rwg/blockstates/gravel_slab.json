@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "type=bottom": { "model": "rwg:block/gravel_slab_bottom" },
+    "type=top": { "model": "rwg:block/gravel_slab_top" },
+    "type=double": { "model": "minecraft:block/gravel" }
+  }
+}

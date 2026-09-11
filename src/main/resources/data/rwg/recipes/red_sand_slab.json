@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["XXX"],
+  "key": {
+    "X": {
+      "item": "minecraft:red_sand"
+    }
+  },
+  "result": {
+    "item": "rwg:red_sand_slab",
+    "count": 6
+  }
+}

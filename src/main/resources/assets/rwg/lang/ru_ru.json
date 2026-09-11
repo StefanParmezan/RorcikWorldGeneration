@@ -3,5 +3,9 @@
   "block.rwg.grass_slab": "Плита из дёрна",
   "block.rwg.dirt_path_slab": "Плита из тропинки",
   "block.rwg.podzol_slab": "Плита из подзола",
-  "block.rwg.coarse_dirt_slab": "Плита из каменистой земли"
+  "block.rwg.coarse_dirt_slab": "Плита из каменистой земли",
+  "block.rwg.sand_slab": "Песчаная плита",
+  "block.rwg.red_sand_slab": "Плита из красного песка",
+  "block.rwg.gravel_slab": "Гравийная плита",
+  "itemGroup.rwg": "Rorcik World Generation"
 }

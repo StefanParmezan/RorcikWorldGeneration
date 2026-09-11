@@ -5,6 +5,6 @@
     "type=double,snowy=false": { "model": "minecraft:block/grass_block" },
     "type=bottom,snowy=true": { "model": "rwg:block/snowy_grass_slab_bottom" },
     "type=top,snowy=true": { "model": "rwg:block/snowy_grass_slab_top" },
-    "type=double,snowy=true": { "model": "minecraft:block/snowy_grass_block" }
+    "type=double,snowy=true": { "model": "minecraft:block/grass_block_snow" }
   }
 }

@@ -29,6 +29,7 @@ public class RwgMod {
 
         RwgBlocks.BLOCKS.register(modEventBus);
         RwgBlocks.ITEMS.register(modEventBus);
+        RwgBlocks.CREATIVE_MODE_TABS.register(modEventBus);
 
         MinecraftForge.EVENT_BUS.register(this);
         context.registerConfig(ModConfig.Type.COMMON, RwgConfig.SPEC);
@@ -40,6 +41,7 @@ public class RwgMod {
 
     @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static class ClientModEvents {
+        @SuppressWarnings("deprecation")
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
             event.enqueueWork(() -> {

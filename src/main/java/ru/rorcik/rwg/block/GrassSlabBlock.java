@@ -54,10 +54,18 @@ public class GrassSlabBlock extends SlabBlock {
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,
                                   LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
         if (direction == Direction.UP) {
-            boolean shouldBeSnowy = neighborState.is(Blocks.SNOW) ||
-                    neighborState.is(Blocks.SNOW_BLOCK);
-            if (state.getValue(SNOWY) != shouldBeSnowy) {
-                return state.setValue(SNOWY, shouldBeSnowy);
+            SlabType currentType = state.getValue(TYPE);
+
+            if (currentType == SlabType.DOUBLE) {
+                boolean shouldBeSnowy = neighborState.is(Blocks.SNOW) || neighborState.is(Blocks.SNOW_BLOCK);
+                if (state.getValue(SNOWY) != shouldBeSnowy) {
+                    return state.setValue(SNOWY, shouldBeSnowy);
+                }
+            } else {
+                boolean shouldBeSnowy = neighborState.is(Blocks.SNOW) || neighborState.is(Blocks.SNOW_BLOCK);
+                if (state.getValue(SNOWY) != shouldBeSnowy) {
+                    return state.setValue(SNOWY, shouldBeSnowy);
+                }
             }
         }
         return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
@@ -66,8 +74,15 @@ public class GrassSlabBlock extends SlabBlock {
     @Override
     public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
         if (!level.isClientSide()) {
-            boolean shouldBeSnowy = isSnowyBiome(level, pos) || hasSnowAbove(level, pos);
+            SlabType currentType = state.getValue(TYPE);
             boolean isSnowy = state.getValue(SNOWY);
+            boolean shouldBeSnowy;
+
+            if (currentType == SlabType.DOUBLE) {
+                shouldBeSnowy = hasSnowAbove(level, pos);
+            } else {
+                shouldBeSnowy = isSnowyBiome(level, pos) || hasSnowAbove(level, pos);
+            }
 
             if (shouldBeSnowy && !isSnowy) {
                 level.setBlock(pos, state.setValue(SNOWY, Boolean.TRUE), 3);
