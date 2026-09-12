@@ -19,9 +19,12 @@ public class RwgConfig {
                     "minecraft:jungle",
                     "minecraft:sparse_jungle",
                     "minecraft:bamboo_jungle",
-                    "minecraft:mangrove_swamp"
+                    "minecraft:mangrove_swamp",
+                    "minecraft:swamp",
+                    "minecraft:lush_caves",
+                    "minecraft:ice_spikes",
+                    "minecraft:cherry_grove"
             ), obj -> obj instanceof String);
-
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> PHYSICS_AFFECTED_BLOCKS = BUILDER
             .comment("List of blocks that activate MineCollapse physics after a block update")
             .defineList("physics_affected_blocks", Arrays.asList(

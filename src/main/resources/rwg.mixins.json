@@ -1,12 +1,8 @@
 {
   "required": true,
-  "minVersion": "0.8",
   "package": "ru.rorcik.rwg.mixin",
-  "refmap": "rwg.refmap.json",
   "compatibilityLevel": "JAVA_17",
   "mixins": [],
-  "client": [],
-  "server": [],
   "injectors": {
     "defaultRequire": 1
   }

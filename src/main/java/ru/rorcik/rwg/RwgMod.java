@@ -8,6 +8,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.level.GrassColor;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -16,6 +17,8 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
+import ru.rorcik.rwg.command.DebugTempCommand;
+import ru.rorcik.rwg.world.RwgTerrablender;
 
 @Mod(RwgMod.MODID)
 public class RwgMod {
@@ -37,6 +40,7 @@ public class RwgMod {
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("Rorcik World Generation initialized");
+        event.enqueueWork(RwgTerrablender::init);
     }
 
     @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
