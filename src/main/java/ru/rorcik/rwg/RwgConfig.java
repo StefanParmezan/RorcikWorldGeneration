@@ -39,16 +39,21 @@ public class RwgConfig {
             .comment("Chance of generating an abandoned highway in forest biomes (0.0 - 1.0)")
             .defineInRange("highway_spawn_chance", 0.05, 0.0, 1.0);
 
+    public static final ForgeConfigSpec.BooleanValue APPLY_JOIN_WORLD_SPAWN_MIXIN = BUILDER
+            .define("apply_join_world_spawn_mixin", true);
+
     static final ForgeConfigSpec SPEC = BUILDER.build();
 
     public static List<? extends String> blacklistedBiomes;
     public static List<? extends String> physicsAffectedBlocks;
     public static double highwaySpawnChance;
+    public static boolean applyJoinWorldSpawnMixin;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
         blacklistedBiomes = BLACKLISTED_BIOMES.get();
         physicsAffectedBlocks = PHYSICS_AFFECTED_BLOCKS.get();
         highwaySpawnChance = HIGHWAY_SPAWN_CHANCE.get();
+        applyJoinWorldSpawnMixin = APPLY_JOIN_WORLD_SPAWN_MIXIN.get();
     }
 }
