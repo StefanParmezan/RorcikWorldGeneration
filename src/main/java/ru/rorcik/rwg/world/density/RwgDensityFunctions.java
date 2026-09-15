@@ -9,9 +9,12 @@ import net.minecraftforge.registries.RegisterEvent;
 
 @Mod.EventBusSubscriber(modid = "rwg", bus = Mod.EventBusSubscriber.Bus.MOD)
 public class RwgDensityFunctions {
-
     @SubscribeEvent
     public static void onRegister(RegisterEvent event) {
-        event.register(Registries.DENSITY_FUNCTION_TYPE, ResourceLocation.fromNamespaceAndPath("rwg", "z_based_temperature"), () -> ZBasedTemperature.CODEC);
+        event.register(
+                Registries.DENSITY_FUNCTION_TYPE,
+                ResourceLocation.fromNamespaceAndPath("rwg", "z_based_temperature"),
+                () -> ZBasedTemperature.CODEC
+        );
     }
 }

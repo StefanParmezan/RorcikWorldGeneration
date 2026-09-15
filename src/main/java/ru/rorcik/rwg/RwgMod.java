@@ -30,6 +30,8 @@ public class RwgMod {
 
         modEventBus.addListener(this::commonSetup);
 
+        MinecraftForge.EVENT_BUS.addListener(this::onRegisterCommands);
+
         RwgBlocks.BLOCKS.register(modEventBus);
         RwgBlocks.ITEMS.register(modEventBus);
         RwgBlocks.CREATIVE_MODE_TABS.register(modEventBus);
@@ -41,6 +43,12 @@ public class RwgMod {
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("Rorcik World Generation initialized");
         event.enqueueWork(RwgTerrablender::init);
+    }
+
+    @SubscribeEvent
+    public void onRegisterCommands(RegisterCommandsEvent event) {
+        DebugTempCommand.register(event.getDispatcher());
+        LOGGER.info("RWG Debug commands registered");
     }
 
     @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)

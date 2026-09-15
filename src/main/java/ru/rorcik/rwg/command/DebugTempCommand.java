@@ -121,8 +121,9 @@ public class DebugTempCommand {
         if (distance <= 9000)  return lerp(distance, 5000, 9000, -0.4, -0.1);
         if (distance <= 14000) return lerp(distance, 9000, 14000, -0.1, 0.2);
         if (distance <= 18000) return lerp(distance, 14000, 18000, 0.2, 0.5);
-        if (distance <= 22000) return lerp(distance, 18000, 22000, 0.5, 0.8);
-        return lerp(distance, 22000, 24000, 0.8, 1.0);
+        if (distance <= 21000) return lerp(distance, 18000, 21000, 0.5, 0.8);
+        if (distance <= 23000) return lerp(distance, 21000, 23000, 0.8, 1.0);
+        return 1.0;
     }
 
     private static double lerp(double x, double x0, double x1, double y0, double y1) {
