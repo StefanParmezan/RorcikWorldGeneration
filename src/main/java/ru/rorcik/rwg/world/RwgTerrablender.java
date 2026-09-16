@@ -49,24 +49,28 @@ public class RwgTerrablender {
 
             addSimpleBiome(mapper, EXTREME_COLD, INLAND, Biomes.SNOWY_PLAINS);
             addSimpleBiome(mapper, EXTREME_COLD, HILLS, Biomes.FROZEN_PEAKS);
+            addSimpleBiome(mapper, EXTREME_COLD, HILLS, Biomes.SNOWY_SLOPES);
             addOceanBiome(mapper, EXTREME_COLD, DEEP_OCEAN, Biomes.FROZEN_OCEAN);
             addOceanBiome(mapper, EXTREME_COLD, OCEAN, Biomes.FROZEN_OCEAN);
             addCoastBiome(mapper, EXTREME_COLD, Biomes.SNOWY_PLAINS);
 
             addSimpleBiome(mapper, COLD, INLAND, Biomes.SNOWY_TAIGA);
             addSimpleBiome(mapper, COLD, HILLS, Biomes.JAGGED_PEAKS);
+            addSimpleBiome(mapper, COLD, HILLS, Biomes.GROVE);
             addOceanBiome(mapper, COLD, DEEP_OCEAN, Biomes.COLD_OCEAN);
             addOceanBiome(mapper, COLD, OCEAN, Biomes.COLD_OCEAN);
             addCoastBiome(mapper, COLD, Biomes.SNOWY_BEACH);
 
             addSimpleBiome(mapper, COOL, INLAND, Biomes.TAIGA);
             addSimpleBiome(mapper, COOL, HILLS, Biomes.WINDSWEPT_HILLS);
+            addSimpleBiome(mapper, COOL, HILLS, Biomes.WINDSWEPT_GRAVELLY_HILLS);
+            addSimpleBiome(mapper, COOL, HILLS, Biomes.WINDSWEPT_FOREST);
             addOceanBiome(mapper, COOL, DEEP_OCEAN, Biomes.COLD_OCEAN);
             addOceanBiome(mapper, COOL, OCEAN, Biomes.OCEAN);
             addCoastBiome(mapper, COOL, Biomes.STONY_SHORE);
-            addSimpleBiome(mapper, COOL, HILLS, Biomes.STONY_PEAKS);
 
             addVariantBiome(mapper, COOL, INLAND, Climate.Parameter.span(0.4f, 1.0f), Biomes.OLD_GROWTH_PINE_TAIGA);
+            addVariantBiome(mapper, COOL, INLAND, Climate.Parameter.span(0.0f, 0.4f), Biomes.OLD_GROWTH_SPRUCE_TAIGA);
             addVariantBiome(mapper, COOL, INLAND, Climate.Parameter.span(-1.0f, -0.5f), Biomes.DARK_FOREST);
 
             addSimpleBiome(mapper, NEUTRAL, INLAND, Biomes.PLAINS);
@@ -75,17 +79,21 @@ public class RwgTerrablender {
             addOceanBiome(mapper, NEUTRAL, OCEAN, Biomes.OCEAN);
             addCoastBiome(mapper, NEUTRAL, Biomes.BEACH);
 
-            addVariantBiome(mapper, NEUTRAL, INLAND, Climate.Parameter.span(0.3f, 1.0f), Biomes.FOREST);
-            addVariantBiome(mapper, NEUTRAL, INLAND, Climate.Parameter.span(-0.3f, 0.3f), Biomes.BIRCH_FOREST);
+            addVariantBiome(mapper, NEUTRAL, INLAND, Climate.Parameter.span(0.5f, 1.0f), Biomes.FOREST);
+            addVariantBiome(mapper, NEUTRAL, INLAND, Climate.Parameter.span(0.2f, 0.5f), Biomes.FLOWER_FOREST);
+            addVariantBiome(mapper, NEUTRAL, INLAND, Climate.Parameter.span(-0.2f, 0.2f), Biomes.BIRCH_FOREST);
+            addVariantBiome(mapper, NEUTRAL, INLAND, Climate.Parameter.span(-0.5f, -0.2f), Biomes.OLD_GROWTH_BIRCH_FOREST);
             addVariantBiome(mapper, NEUTRAL, INLAND, Climate.Parameter.span(-1.0f, -0.5f), Biomes.SUNFLOWER_PLAINS);
 
             addSimpleBiome(mapper, WARM, INLAND, Biomes.SAVANNA);
             addSimpleBiome(mapper, WARM, HILLS, Biomes.SAVANNA_PLATEAU);
+            addSimpleBiome(mapper, WARM, HILLS, Biomes.WINDSWEPT_SAVANNA);
             addOceanBiome(mapper, WARM, DEEP_OCEAN, Biomes.LUKEWARM_OCEAN);
             addOceanBiome(mapper, WARM, OCEAN, Biomes.LUKEWARM_OCEAN);
             addCoastBiome(mapper, WARM, Biomes.BEACH);
 
             addSimpleBiome(mapper, HOT, INLAND, Biomes.DESERT);
+            addSimpleBiome(mapper, HOT, HILLS, Biomes.STONY_PEAKS);
             addOceanBiome(mapper, HOT, DEEP_OCEAN, Biomes.WARM_OCEAN);
             addOceanBiome(mapper, HOT, OCEAN, Biomes.WARM_OCEAN);
             addCoastBiome(mapper, HOT, Biomes.DESERT);

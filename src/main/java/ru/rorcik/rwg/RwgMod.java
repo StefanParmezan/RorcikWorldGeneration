@@ -17,13 +17,27 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
+import org.slf4j.helpers.NOPLogger;
 import ru.rorcik.rwg.command.DebugTempCommand;
 import ru.rorcik.rwg.world.RwgTerrablender;
+import ru.rorcik.rwg.worldgen.RwgCarvers;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 @Mod(RwgMod.MODID)
 public class RwgMod {
     public static final String MODID = "rwg";
     private static final Logger LOGGER = LogUtils.getLogger();
+
+    static {
+        if (shouldSuppressDensityWarnings()) {
+            suppressDensityFunctionLogs();
+        }
+    }
 
     public RwgMod(FMLJavaModLoadingContext context) {
         IEventBus modEventBus = context.getModEventBus();
@@ -35,10 +49,70 @@ public class RwgMod {
         RwgBlocks.BLOCKS.register(modEventBus);
         RwgBlocks.ITEMS.register(modEventBus);
         RwgBlocks.CREATIVE_MODE_TABS.register(modEventBus);
-
+        RwgCarvers.CARVERS.register(modEventBus);
 
         MinecraftForge.EVENT_BUS.register(this);
         context.registerConfig(ModConfig.Type.COMMON, RwgConfig.SPEC);
+    }
+
+    private static boolean shouldSuppressDensityWarnings() {
+        try {
+            Path configPath = Paths.get("config", "rwg-common.toml");
+
+            if (!Files.exists(configPath)) {
+                return true;
+            }
+
+            String content = Files.readString(configPath);
+
+            if (content.contains("suppress_density_warnings")) {
+                String[] lines = content.split("\n");
+                for (String line : lines) {
+                    line = line.trim();
+                    if (line.startsWith("suppress_density_warnings")) {
+                        String value = line.split("=")[1].trim();
+                        return Boolean.parseBoolean(value);
+                    }
+                }
+            }
+
+            return true;
+
+        } catch (Exception e) {
+            LOGGER.debug("Could not read config early, using default value for suppress_density_warnings");
+            return true;
+        }
+    }
+
+    private static void suppressDensityFunctionLogs() {
+        try {
+            Class<?> interfaceClass = Class.forName("net.minecraft.world.level.levelgen.DensityFunctions$TwoArgumentSimpleFunction");
+            Field loggerField = interfaceClass.getDeclaredField("LOGGER");
+            loggerField.setAccessible(true);
+
+            try {
+                Field modifiersField = Field.class.getDeclaredField("modifiers");
+                modifiersField.setAccessible(true);
+                modifiersField.setInt(loggerField, loggerField.getModifiers() & ~Modifier.FINAL);
+            } catch (NoSuchFieldException e) {
+                var lookup = java.lang.invoke.MethodHandles.privateLookupIn(
+                        interfaceClass,
+                        java.lang.invoke.MethodHandles.lookup()
+                );
+                var varHandle = lookup.findStaticVarHandle(
+                        interfaceClass,
+                        "LOGGER",
+                        org.slf4j.Logger.class
+                );
+                varHandle.set(NOPLogger.NOP_LOGGER);
+                return;
+            }
+
+            loggerField.set(null, NOPLogger.NOP_LOGGER);
+
+        } catch (Exception e) {
+            LOGGER.warn("Could not suppress DensityFunctions logger: {}", e.getMessage());
+        }
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
@@ -49,12 +123,11 @@ public class RwgMod {
     @SubscribeEvent
     public void onRegisterCommands(RegisterCommandsEvent event) {
         DebugTempCommand.register(event.getDispatcher());
-        LOGGER.info("RWG Debug commands registered");
     }
 
+    @SuppressWarnings("deprecation")
     @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static class ClientModEvents {
-        @SuppressWarnings("deprecation")
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
             event.enqueueWork(() -> {

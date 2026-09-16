@@ -4,13 +4,8 @@ import com.mojang.serialization.Codec;
 import net.minecraft.util.KeyDispatchDataCodec;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.levelgen.DensityFunction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public record ZBasedTemperature() implements DensityFunction {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger("RWG_TempDebug");
-    private static int debugCounter = 0;
 
     private static final double PERIOD = 46000.0;
     private static final double HALF_PERIOD = 23000.0;
@@ -38,15 +33,7 @@ public record ZBasedTemperature() implements DensityFunction {
             temperature = ascendingTemp(PERIOD - distMod);
         }
 
-        double finalTemp = Mth.clamp(temperature, -1.0, 1.0);
-
-        if (debugCounter < 10 && distance >= 10000 && distance <= 12000) {
-            LOGGER.warn(">>> [RWG DEBUG] X: {} | Z: {} | Distance: {} | Temp: {}",
-                    x, z, distance, finalTemp);
-            debugCounter++;
-        }
-
-        return finalTemp;
+        return Mth.clamp(temperature, -1.0, 1.0);
     }
 
     @Override

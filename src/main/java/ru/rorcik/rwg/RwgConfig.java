@@ -25,6 +25,7 @@ public class RwgConfig {
                     "minecraft:ice_spikes",
                     "minecraft:cherry_grove"
             ), obj -> obj instanceof String);
+
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> PHYSICS_AFFECTED_BLOCKS = BUILDER
             .comment("List of blocks that activate MineCollapse physics after a block update")
             .defineList("physics_affected_blocks", Arrays.asList(
@@ -42,6 +43,78 @@ public class RwgConfig {
     public static final ForgeConfigSpec.BooleanValue APPLY_JOIN_WORLD_SPAWN_MIXIN = BUILDER
             .define("apply_join_world_spawn_mixin", true);
 
+    public static final ForgeConfigSpec.BooleanValue ENABLE_OLD_CAVES;
+    public static final ForgeConfigSpec.BooleanValue DISABLE_VANILLA_CAVES;
+    public static final ForgeConfigSpec.BooleanValue DISABLE_CANYONS;
+    public static final ForgeConfigSpec.IntValue CAVE_MIN_SURFACE_DISTANCE;
+    public static final ForgeConfigSpec.IntValue CAVE_FREQUENCY;
+    public static final ForgeConfigSpec.DoubleValue CAVE_RARITY;
+    public static final ForgeConfigSpec.IntValue CAVE_MIN_Y;
+    public static final ForgeConfigSpec.IntValue CAVE_MAX_Y;
+    public static final ForgeConfigSpec.BooleanValue SMOOTH_CAVE_WALLS;
+    public static final ForgeConfigSpec.BooleanValue EXPOSE_CAVES_IN_MOUNTAINS;
+
+    public static final ForgeConfigSpec.BooleanValue SUPPRESS_DENSITY_WARNINGS;
+
+    static {
+        BUILDER.push("caves");
+
+        ENABLE_OLD_CAVES = BUILDER
+                .comment("Use old-style cave generation (pre-1.18) instead of vanilla noise caves")
+                .define("enable_old_caves", true);
+
+        DISABLE_VANILLA_CAVES = BUILDER
+                .comment("Completely disable vanilla cave carvers (requires enable_old_caves = true)")
+                .define("disable_vanilla_caves", true);
+
+        DISABLE_CANYONS = BUILDER
+                .comment("Disable large canyon/ravine generation")
+                .define("disable_canyons", true);
+
+        CAVE_MIN_SURFACE_DISTANCE = BUILDER
+                .comment("Minimum distance from surface before caves can generate (prevents swiss cheese effect)")
+                .defineInRange("cave_min_surface_distance", 8, 3, 32);
+
+        CAVE_FREQUENCY = BUILDER
+                .comment("How often caves generate (higher = more caves). Default old caves: 7")
+                .defineInRange("cave_frequency", 7, 1, 20);
+
+        CAVE_RARITY = BUILDER
+                .comment("Cave spawn chance per chunk (0.0 - 1.0). Lower = rarer but longer caves")
+                .defineInRange("cave_rarity", 0.14, 0.01, 1.0);
+
+        CAVE_MIN_Y = BUILDER
+                .comment("Minimum Y level for cave generation")
+                .defineInRange("cave_min_y", -54, -64, 64);
+
+        CAVE_MAX_Y = BUILDER
+                .comment("Maximum Y level for cave generation")
+                .defineInRange("cave_max_y", 128, 0, 256);
+
+        SMOOTH_CAVE_WALLS = BUILDER
+                .comment("Make cave walls smoother (less jagged)")
+                .define("smooth_cave_walls", true);
+
+        EXPOSE_CAVES_IN_MOUNTAINS = BUILDER
+                .comment("Allow cave entrances to spawn naturally in mountain biomes")
+                .define("expose_caves_in_mountains", true);
+
+        BUILDER.pop();
+
+        BUILDER.push("logging");
+
+        SUPPRESS_DENSITY_WARNINGS = BUILDER
+                .comment(
+                        "Suppress 'non-overlapping inputs' warnings from vanilla DensityFunctions.",
+                        "These warnings are harmless and appear in vanilla Minecraft too.",
+                        "Set to false to see original Mojang debug output (will spam logs).",
+                        "Requires game restart to take effect."
+                )
+                .define("suppress_density_warnings", true);
+
+        BUILDER.pop();
+    }
+
     static final ForgeConfigSpec SPEC = BUILDER.build();
 
     public static List<? extends String> blacklistedBiomes;
@@ -49,11 +122,37 @@ public class RwgConfig {
     public static double highwaySpawnChance;
     public static boolean applyJoinWorldSpawnMixin;
 
+    public static boolean enableOldCaves;
+    public static boolean disableVanillaCaves;
+    public static boolean disableCanyons;
+    public static int caveMinSurfaceDistance;
+    public static int caveFrequency;
+    public static double caveRarity;
+    public static int caveMinY;
+    public static int caveMaxY;
+    public static boolean smoothCaveWalls;
+    public static boolean exposeCavesInMountains;
+
+    public static boolean suppressDensityWarnings;
+
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
         blacklistedBiomes = BLACKLISTED_BIOMES.get();
         physicsAffectedBlocks = PHYSICS_AFFECTED_BLOCKS.get();
         highwaySpawnChance = HIGHWAY_SPAWN_CHANCE.get();
         applyJoinWorldSpawnMixin = APPLY_JOIN_WORLD_SPAWN_MIXIN.get();
+
+        enableOldCaves = ENABLE_OLD_CAVES.get();
+        disableVanillaCaves = DISABLE_VANILLA_CAVES.get();
+        disableCanyons = DISABLE_CANYONS.get();
+        caveMinSurfaceDistance = CAVE_MIN_SURFACE_DISTANCE.get();
+        caveFrequency = CAVE_FREQUENCY.get();
+        caveRarity = CAVE_RARITY.get();
+        caveMinY = CAVE_MIN_Y.get();
+        caveMaxY = CAVE_MAX_Y.get();
+        smoothCaveWalls = SMOOTH_CAVE_WALLS.get();
+        exposeCavesInMountains = EXPOSE_CAVES_IN_MOUNTAINS.get();
+
+        suppressDensityWarnings = SUPPRESS_DENSITY_WARNINGS.get();
     }
 }
