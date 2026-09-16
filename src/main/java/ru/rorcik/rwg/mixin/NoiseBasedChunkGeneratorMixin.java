@@ -3,14 +3,16 @@ package ru.rorcik.rwg.mixin;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.StructureManager;
+import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.levelgen.RandomState;
+import net.minecraft.world.level.levelgen.GenerationStep;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
+import net.minecraft.world.level.levelgen.RandomState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -42,14 +44,19 @@ public class NoiseBasedChunkGeneratorMixin {
         BLOCK_TO_SLAB.put(Blocks.DIORITE, () -> Blocks.DIORITE_SLAB);
     }
 
-    @Inject(method = "buildSurface", at = @At("TAIL"), remap = true)
+    @Inject(method = "applyCarvers", at = @At("TAIL"), remap = true)
     private void rwg$applySlabSmoothing(
             WorldGenRegion region,
-            StructureManager structureManager,
+            long seed,
             RandomState randomState,
+            BiomeManager biomeManager,
+            StructureManager structureManager,
             ChunkAccess chunk,
+            GenerationStep.Carving step,
             CallbackInfo ci
     ) {
+        if (step != GenerationStep.Carving.AIR) return;
+
         for (int x = 0; x < 16; x++) {
             for (int z = 0; z < 16; z++) {
                 processColumn(chunk, x, z);
@@ -75,6 +82,10 @@ public class NoiseBasedChunkGeneratorMixin {
             return;
         }
 
+        if (!topState.getFluidState().isEmpty()) {
+            return;
+        }
+
         if (!isActualSurface(chunk, topPos)) {
             return;
         }
@@ -83,7 +94,9 @@ public class NoiseBasedChunkGeneratorMixin {
             return;
         }
 
-        boolean hasWater = !topState.getFluidState().isEmpty();
+        if (hasNearbyWater(chunk, x, z, currentHeight)) {
+            return;
+        }
 
         int[][] directions = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
         int lowerNeighbors = 0;
@@ -95,39 +108,49 @@ public class NoiseBasedChunkGeneratorMixin {
 
             if (nx >= 0 && nx < 16 && nz >= 0 && nz < 16) {
                 int neighborHeight = findActualSurface(chunk, nx, nz);
-
                 if (neighborHeight < currentHeight) {
                     lowerNeighbors++;
                     minNeighborHeight = Math.min(minNeighborHeight, neighborHeight);
-                }
-
-                if (!hasWater) {
-                    BlockPos neighborPos = new BlockPos(
-                            chunk.getPos().getMinBlockX() + nx,
-                            neighborHeight,
-                            chunk.getPos().getMinBlockZ() + nz
-                    );
-                    BlockState neighborState = chunk.getBlockState(neighborPos);
-                    if (!neighborState.getFluidState().isEmpty()) {
-                        hasWater = true;
-                    }
                 }
             }
         }
 
         if (lowerNeighbors > 0 && lowerNeighbors < 4 && (currentHeight - minNeighborHeight) == 1) {
-            Supplier<Block> slabSupplier = BLOCK_TO_SLAB.get(topBlock);
-            Block slabBlock = slabSupplier.get();
-
+            Block slabBlock = BLOCK_TO_SLAB.get(topBlock).get();
             BlockState slabState = slabBlock.defaultBlockState()
                     .setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-
-            if (hasWater) {
-                slabState = slabState.setValue(SlabBlock.WATERLOGGED, true);
-            }
-
             chunk.setBlockState(topPos, slabState, false);
         }
+    }
+
+    private static boolean hasNearbyWater(ChunkAccess chunk, int x, int z, int surfaceY) {
+        int minY = chunk.getMinBuildHeight();
+        int maxY = chunk.getMaxBuildHeight();
+
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                int cx = x + dx;
+                int cz = z + dz;
+
+                if (cx < 0 || cx > 15 || cz < 0 || cz > 15) continue;
+
+                int wx = chunk.getPos().getMinBlockX() + cx;
+                int wz = chunk.getPos().getMinBlockZ() + cz;
+
+                for (int dy = -1; dy <= 4; dy++) {
+                    int y = surfaceY + dy;
+                    if (y < minY || y >= maxY) continue;
+
+                    BlockPos checkPos = new BlockPos(wx, y, wz);
+                    BlockState state = chunk.getBlockState(checkPos);
+
+                    if (!state.getFluidState().isEmpty()) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private static int findActualSurface(ChunkAccess chunk, int x, int z) {

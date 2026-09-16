@@ -36,6 +36,7 @@ public class RwgMod {
         RwgBlocks.ITEMS.register(modEventBus);
         RwgBlocks.CREATIVE_MODE_TABS.register(modEventBus);
 
+
         MinecraftForge.EVENT_BUS.register(this);
         context.registerConfig(ModConfig.Type.COMMON, RwgConfig.SPEC);
     }
