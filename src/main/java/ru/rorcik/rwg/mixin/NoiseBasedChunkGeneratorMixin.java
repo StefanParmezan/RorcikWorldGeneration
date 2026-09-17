@@ -9,6 +9,7 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -24,12 +25,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ru.rorcik.rwg.RwgBlocks;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Mixin(NoiseBasedChunkGenerator.class)
 public class NoiseBasedChunkGeneratorMixin {
@@ -109,6 +105,10 @@ public class NoiseBasedChunkGeneratorMixin {
         int logX = 4 + (int) (Math.abs(chunkHash >> 32) % 8L);
         int logZ = 4 + (int) (Math.abs(chunkHash >> 48) % 8L);
 
+        int farmX = 5 + (int) (Math.abs(chunkHash >> 24) % 6L);
+        int farmZ = 5 + (int) (Math.abs(chunkHash >> 40) % 6L);
+        boolean spawnFarm = (Math.abs(chunkHash >> 16) % 100L) < 15L;
+
         boolean spawnBoulder = (Math.abs(chunkHash) % 100L) < 3L;
         boolean spawnLog = (Math.abs(chunkHash >> 8) % 100L) < 3L;
 
@@ -116,12 +116,13 @@ public class NoiseBasedChunkGeneratorMixin {
             for (int z = 0; z < 16; z++) {
                 processColumn(region, seed, chunk, x, z,
                         x == boulderX && z == boulderZ && spawnBoulder,
-                        x == logX && z == logZ && spawnLog);
+                        x == logX && z == logZ && spawnLog,
+                        x == farmX && z == farmZ && spawnFarm);
             }
         }
     }
 
-    private static void processColumn(WorldGenRegion region, long seed, ChunkAccess chunk, int x, int z, boolean isBoulderSpot, boolean isLogSpot) {
+    private static void processColumn(WorldGenRegion region, long seed, ChunkAccess chunk, int x, int z, boolean isBoulderSpot, boolean isLogSpot, boolean isFarmCenter) {
         int worldX = chunk.getPos().getMinBlockX() + x;
         int worldZ = chunk.getPos().getMinBlockZ() + z;
 
@@ -131,7 +132,11 @@ public class NoiseBasedChunkGeneratorMixin {
         BlockPos topPos = new BlockPos(worldX, currentHeight, worldZ);
         BlockState topState = chunk.getBlockState(topPos);
 
-        applyOrganicSurfacePalette(region, seed, chunk, topPos, topState, worldX, worldZ);
+        Holder<Biome> biomeHolder = region.getBiome(topPos);
+        String biomeName = biomeHolder.unwrapKey().map(key -> key.location().toString()).orElse("");
+        boolean allowMoss = isMossAllowed(biomeName);
+
+        applyOrganicSurfacePalette(region, seed, chunk, topPos, topState, worldX, worldZ, allowMoss);
         topState = chunk.getBlockState(topPos);
 
         if (!isStoneBlock(topState)) {
@@ -139,15 +144,122 @@ public class NoiseBasedChunkGeneratorMixin {
         }
         topState = chunk.getBlockState(topPos);
 
+        if (isFarmCenter) {
+            applyWildFarm(region, chunk, topPos, currentHeight, seed, worldX, worldZ, biomeName);
+            topState = chunk.getBlockState(topPos);
+        }
+
         if (isBoulderSpot || isLogSpot) {
-            applyMicroDecor(region, chunk, topPos, currentHeight, seed, worldX, worldZ, x, z, isBoulderSpot, isLogSpot);
+            applyMicroDecor(region, chunk, topPos, currentHeight, seed, worldX, worldZ, x, z, isBoulderSpot, isLogSpot, biomeName);
         }
         topState = chunk.getBlockState(topPos);
 
-        applySurfaceCarpet(chunk, topPos, topState, worldX, worldZ, seed);
+        applySurfaceCarpet(chunk, topPos, topState, worldX, worldZ, seed, allowMoss);
     }
 
-    private static void applyOrganicSurfacePalette(WorldGenRegion region, long seed, ChunkAccess chunk, BlockPos topPos, BlockState topState, int worldX, int worldZ) {
+    private static boolean isMossAllowed(String biomeName) {
+        return !biomeName.contains("snow") &&
+                !biomeName.contains("frozen") &&
+                !biomeName.contains("ice") &&
+                !biomeName.contains("peak") &&
+                !biomeName.contains("slope") &&
+                !biomeName.contains("grove");
+    }
+
+    private static boolean isFarmAllowed(String biomeName) {
+        return biomeName.equals("minecraft:plains") ||
+                biomeName.equals("minecraft:sunflower_plains") ||
+                biomeName.equals("minecraft:forest") ||
+                biomeName.equals("minecraft:flower_forest") ||
+                biomeName.equals("minecraft:birch_forest") ||
+                biomeName.equals("minecraft:old_growth_birch_forest") ||
+                biomeName.equals("minecraft:meadow") ||
+                biomeName.equals("minecraft:taiga") ||
+                biomeName.equals("minecraft:old_growth_spruce_taiga") ||
+                biomeName.equals("minecraft:old_growth_pine_taiga");
+    }
+
+    private static void applyWildFarm(WorldGenRegion region, ChunkAccess chunk, BlockPos centerPos, int currentHeight, long seed, int worldX, int worldZ, String biomeName) {
+        if (!isFarmAllowed(biomeName)) return;
+
+        try {
+            List<BlockPos> farmBlocks = new ArrayList<>();
+            Set<BlockPos> checked = new HashSet<>();
+            Queue<BlockPos> queue = new LinkedList<>();
+
+            queue.add(centerPos);
+            checked.add(centerPos);
+
+            int maxBlocks = 8;
+
+            while (!queue.isEmpty() && farmBlocks.size() < maxBlocks) {
+                BlockPos current = queue.poll();
+
+                int localX = current.getX() - chunk.getPos().getMinBlockX();
+                int localZ = current.getZ() - chunk.getPos().getMinBlockZ();
+
+                if (localX < 0 || localX > 15 || localZ < 0 || localZ > 15) continue;
+
+                int h = findActualSurface(chunk, localX, localZ);
+                if (Math.abs(h - currentHeight) > 2) continue;
+
+                BlockState state = chunk.getBlockState(current);
+                if (!state.is(Blocks.GRASS_BLOCK) && !state.is(Blocks.DIRT) &&
+                        !state.is(Blocks.COARSE_DIRT) && !state.is(Blocks.PODZOL)) {
+                    continue;
+                }
+
+                if (!chunk.getBlockState(current.above()).isAir()) {
+                    continue;
+                }
+
+                farmBlocks.add(current);
+
+                if (farmBlocks.size() >= maxBlocks) break;
+
+                double expansionNoise = getNoise(seed + 55555L, current.getX(), current.getZ(), 0.5);
+
+                if (expansionNoise > 0.4) {
+                    for (int[] dir : new int[][]{{1,0}, {-1,0}, {0,1}, {0,-1}}) {
+                        BlockPos neighbor = current.offset(dir[0], 0, dir[1]);
+                        if (!checked.contains(neighbor)) {
+                            checked.add(neighbor);
+                            queue.add(neighbor);
+                        }
+                    }
+                }
+            }
+
+            for (BlockPos pos : farmBlocks) {
+                chunk.setBlockState(pos, Blocks.FARMLAND.defaultBlockState(), false);
+                BlockState crop = getRandomWildCrop(seed, pos.getX(), pos.getZ());
+                chunk.setBlockState(pos.above(), crop, false);
+            }
+
+        } catch (Exception e) {
+            return;
+        }
+    }
+
+    private static BlockState getRandomWildCrop(long seed, int x, int z) {
+        long h = hash(seed + 77777L, x, z);
+        int type = (int) (Math.abs(h) % 4L);
+        int age = (int) (Math.abs(h >> 8) % 8L);
+
+        if (age > 2 && age < 7) {
+            age = 1;
+        }
+
+        switch (type) {
+            case 0: return Blocks.WHEAT.defaultBlockState().setValue(CropBlock.AGE, age);
+            case 1: return Blocks.CARROTS.defaultBlockState().setValue(CropBlock.AGE, age);
+            case 2: return Blocks.POTATOES.defaultBlockState().setValue(CropBlock.AGE, age);
+            case 3: return Blocks.BEETROOTS.defaultBlockState().setValue(CropBlock.AGE, Math.min(age, 3));
+        }
+        return Blocks.WHEAT.defaultBlockState().setValue(CropBlock.AGE, age);
+    }
+
+    private static void applyOrganicSurfacePalette(WorldGenRegion region, long seed, ChunkAccess chunk, BlockPos topPos, BlockState topState, int worldX, int worldZ, boolean allowMoss) {
         if (topState.getBlock() instanceof SlabBlock ||
                 topState.getBlock() instanceof net.minecraft.world.level.block.CarpetBlock ||
                 topState.getBlock() instanceof net.minecraft.world.level.block.FlowerBlock ||
@@ -161,11 +273,11 @@ public class NoiseBasedChunkGeneratorMixin {
 
         double patchNoise = getNoise(seed, worldX, worldZ, 0.35);
 
-        if (patchNoise > 0.88) {
+        if (allowMoss && patchNoise > 0.88) {
             chunk.setBlockState(topPos, Blocks.MOSS_BLOCK.defaultBlockState(), false);
         } else if (patchNoise > 0.78) {
             chunk.setBlockState(topPos, Blocks.PODZOL.defaultBlockState(), false);
-        } else if (patchNoise > 0.74) {
+        } else if (allowMoss && patchNoise > 0.74) {
             chunk.setBlockState(topPos, Blocks.MOSSY_COBBLESTONE.defaultBlockState(), false);
         } else if (patchNoise > 0.55) {
             chunk.setBlockState(topPos, Blocks.COARSE_DIRT.defaultBlockState(), false);
@@ -212,7 +324,7 @@ public class NoiseBasedChunkGeneratorMixin {
         if (state.is(Blocks.RED_SAND)) return RwgBlocks.RED_SAND_SLAB.get().defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
         if (state.is(Blocks.GRAVEL)) return RwgBlocks.GRAVEL_SLAB.get().defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
         if (state.is(Blocks.MOSS_BLOCK)) return Blocks.MOSS_CARPET.defaultBlockState();
-        if (state.is(Blocks.MOSSY_COBBLESTONE)) return Blocks.MOSSY_COBBLESTONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
+        if (state.is(Blocks.MOSSY_COBBLESTONE)) return Blocks.COBBLESTONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
 
         if (state.is(Blocks.STONE)) return Blocks.STONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
         if (state.is(Blocks.COBBLESTONE)) return Blocks.COBBLESTONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
@@ -227,11 +339,8 @@ public class NoiseBasedChunkGeneratorMixin {
         return null;
     }
 
-    private static void applyMicroDecor(WorldGenRegion region, ChunkAccess chunk, BlockPos topPos, int currentHeight, long seed, int worldX, int worldZ, int localX, int localZ, boolean isBoulderSpot, boolean isLogSpot) {
+    private static void applyMicroDecor(WorldGenRegion region, ChunkAccess chunk, BlockPos topPos, int currentHeight, long seed, int worldX, int worldZ, int localX, int localZ, boolean isBoulderSpot, boolean isLogSpot, String biomeName) {
         if (topPos.getY() < chunk.getMinBuildHeight() || topStateIsInvalidForDecor(topPos, chunk)) return;
-
-        Holder<Biome> biomeHolder = region.getBiome(topPos);
-        String biomeName = biomeHolder.unwrapKey().map(key -> key.location().toString()).orElse("");
 
         if (isBoulderSpot) {
             if (!BOULDER_BIOMES.contains(biomeName)) return;
@@ -257,7 +366,9 @@ public class NoiseBasedChunkGeneratorMixin {
         }
     }
 
-    private static void applySurfaceCarpet(ChunkAccess chunk, BlockPos topPos, BlockState topState, int worldX, int worldZ, long seed) {
+    private static void applySurfaceCarpet(ChunkAccess chunk, BlockPos topPos, BlockState topState, int worldX, int worldZ, long seed, boolean allowMoss) {
+        if (!allowMoss) return;
+
         if (topState.getBlock() instanceof SlabBlock ||
                 topState.getBlock() instanceof net.minecraft.world.level.block.CarpetBlock ||
                 topState.getBlock() instanceof net.minecraft.world.level.block.FlowerBlock) {
