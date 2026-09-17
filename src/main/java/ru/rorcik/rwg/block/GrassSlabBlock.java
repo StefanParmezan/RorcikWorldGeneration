@@ -10,6 +10,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SlabBlock;
@@ -54,18 +55,9 @@ public class GrassSlabBlock extends SlabBlock {
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,
                                   LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
         if (direction == Direction.UP) {
-            SlabType currentType = state.getValue(TYPE);
-
-            if (currentType == SlabType.DOUBLE) {
-                boolean shouldBeSnowy = neighborState.is(Blocks.SNOW) || neighborState.is(Blocks.SNOW_BLOCK);
-                if (state.getValue(SNOWY) != shouldBeSnowy) {
-                    return state.setValue(SNOWY, shouldBeSnowy);
-                }
-            } else {
-                boolean shouldBeSnowy = neighborState.is(Blocks.SNOW) || neighborState.is(Blocks.SNOW_BLOCK);
-                if (state.getValue(SNOWY) != shouldBeSnowy) {
-                    return state.setValue(SNOWY, shouldBeSnowy);
-                }
+            boolean shouldBeSnowy = neighborState.is(Blocks.SNOW) || neighborState.is(Blocks.SNOW_BLOCK);
+            if (state.getValue(SNOWY) != shouldBeSnowy) {
+                return state.setValue(SNOWY, shouldBeSnowy);
             }
         }
         return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
@@ -73,21 +65,41 @@ public class GrassSlabBlock extends SlabBlock {
 
     @Override
     public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        if (!level.isClientSide()) {
-            SlabType currentType = state.getValue(TYPE);
-            boolean isSnowy = state.getValue(SNOWY);
-            boolean shouldBeSnowy;
+        if (level.isClientSide) return;
 
-            if (currentType == SlabType.DOUBLE) {
-                shouldBeSnowy = hasSnowAbove(level, pos);
-            } else {
-                shouldBeSnowy = isSnowyBiome(level, pos) || hasSnowAbove(level, pos);
-            }
+        SlabType currentType = state.getValue(TYPE);
+        boolean isSnowy = state.getValue(SNOWY);
+        boolean shouldBeSnowy;
+        if (currentType == SlabType.DOUBLE) {
+            shouldBeSnowy = hasSnowAbove(level, pos);
+        } else {
+            shouldBeSnowy = isSnowyBiome(level, pos) || hasSnowAbove(level, pos);
+        }
+        if (shouldBeSnowy != isSnowy) {
+            state = state.setValue(SNOWY, shouldBeSnowy);
+            level.setBlock(pos, state, 3);
+        }
 
-            if (shouldBeSnowy && !isSnowy) {
-                level.setBlock(pos, state.setValue(SNOWY, Boolean.TRUE), 3);
-            } else if (!shouldBeSnowy && isSnowy) {
-                level.setBlock(pos, state.setValue(SNOWY, Boolean.FALSE), 3);
+        if (!canBeGrass(state, level, pos)) {
+            level.setBlockAndUpdate(pos, RwgBlocks.DIRT_SLAB.get().defaultBlockState()
+                    .setValue(TYPE, state.getValue(TYPE))
+                    .setValue(WATERLOGGED, state.getValue(WATERLOGGED)));
+        } else if (level.getMaxLocalRawBrightness(pos.above()) >= 9) {
+            BlockState grassState = this.defaultBlockState()
+                    .setValue(TYPE, state.getValue(TYPE))
+                    .setValue(WATERLOGGED, state.getValue(WATERLOGGED))
+                    .setValue(SNOWY, state.getValue(SNOWY));
+
+            for (int i = 0; i < 4; ++i) {
+                BlockPos targetPos = pos.offset(random.nextInt(3) - 1, random.nextInt(5) - 3, random.nextInt(3) - 1);
+                BlockState targetState = level.getBlockState(targetPos);
+                if (targetState.is(RwgBlocks.DIRT_SLAB.get()) && canPropagate(grassState, level, targetPos)) {
+                    boolean snowy = isSnowyBiome(level, targetPos) || hasSnowAbove(level, targetPos);
+                    level.setBlockAndUpdate(targetPos, grassState
+                            .setValue(TYPE, targetState.getValue(TYPE))
+                            .setValue(WATERLOGGED, targetState.getValue(WATERLOGGED))
+                            .setValue(SNOWY, snowy));
+                }
             }
         }
     }
@@ -100,6 +112,24 @@ public class GrassSlabBlock extends SlabBlock {
     private boolean isSnowyBiome(Level level, BlockPos pos) {
         var biome = level.getBiome(pos);
         return biome.value().coldEnoughToSnow(pos);
+    }
+
+    private boolean canBeGrass(BlockState state, LevelReader level, BlockPos pos) {
+        BlockPos abovePos = pos.above();
+        BlockState aboveState = level.getBlockState(abovePos);
+
+        if (aboveState.is(Blocks.SNOW)) {
+            return true;
+        } else if (aboveState.getFluidState().getAmount() == 8) {
+            return false;
+        } else {
+            int light = level.getMaxLocalRawBrightness(abovePos);
+            return light >= 9;
+        }
+    }
+
+    private boolean canPropagate(BlockState state, LevelReader level, BlockPos pos) {
+        return canBeGrass(state, level, pos) && !level.getBlockState(pos.above()).is(Blocks.SNOW);
     }
 
     @Override
