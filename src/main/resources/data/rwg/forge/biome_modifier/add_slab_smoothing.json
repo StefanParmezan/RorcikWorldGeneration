@@ -1,0 +1,9 @@
+{
+  "type": "forge:add_features",
+  "biomes": [
+    "minecraft:plains", "minecraft:forest", "minecraft:birch_forest",
+    "minecraft:taiga", "minecraft:meadow", "minecraft:sunflower_plains", "minecraft:dark_forest"
+  ],
+  "features": "rwg:slab_smoothing",
+  "step": "vegetal_decoration"
+}

@@ -47,7 +47,6 @@ public class RwgTerrablender {
         @Override
         public void addBiomes(Registry<Biome> registry, Consumer<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> mapper) {
 
-            // === EXTREME_COLD ===
             addBiome(mapper, EXTREME_COLD, INLAND, FULL_RANGE, Biomes.SNOWY_PLAINS);
             addBiome(mapper, EXTREME_COLD, HILLS, FULL_RANGE, Biomes.FROZEN_PEAKS);
             addBiome(mapper, EXTREME_COLD, HILLS, FULL_RANGE, Biomes.SNOWY_SLOPES);
@@ -55,7 +54,6 @@ public class RwgTerrablender {
             addOceanBiome(mapper, EXTREME_COLD, OCEAN, Biomes.FROZEN_OCEAN);
             addCoastBiome(mapper, EXTREME_COLD, Biomes.SNOWY_PLAINS);
 
-            // === COLD ===
             addBiome(mapper, COLD, INLAND, FULL_RANGE, Biomes.SNOWY_TAIGA);
             addBiome(mapper, COLD, HILLS, FULL_RANGE, Biomes.JAGGED_PEAKS);
             addBiome(mapper, COLD, HILLS, FULL_RANGE, Biomes.GROVE);
@@ -63,8 +61,6 @@ public class RwgTerrablender {
             addOceanBiome(mapper, COLD, OCEAN, Biomes.COLD_OCEAN);
             addCoastBiome(mapper, COLD, Biomes.SNOWY_BEACH);
 
-            // === COOL (Тайга и её вариации) ===
-            // Делим влажность на 4 непересекающихся диапазона, чтобы вариации ГАРАНТИРОВАННО спавнились
             addBiome(mapper, COOL, INLAND, Climate.Parameter.span(-1.0f, -0.5f), Biomes.OLD_GROWTH_SPRUCE_TAIGA);
             addBiome(mapper, COOL, INLAND, Climate.Parameter.span(-0.5f, 0.0f), Biomes.DARK_FOREST);
             addBiome(mapper, COOL, INLAND, Climate.Parameter.span(0.0f, 0.5f), Biomes.TAIGA);
@@ -77,11 +73,9 @@ public class RwgTerrablender {
             addOceanBiome(mapper, COOL, OCEAN, Biomes.OCEAN);
             addCoastBiome(mapper, COOL, Biomes.STONY_SHORE);
 
-            // === NEUTRAL (Равнины и Леса) ===
-            // Делим влажность на 5 непересекающихся диапазонов
             addBiome(mapper, NEUTRAL, INLAND, Climate.Parameter.span(-1.0f, -0.6f), Biomes.SUNFLOWER_PLAINS);
             addBiome(mapper, NEUTRAL, INLAND, Climate.Parameter.span(-0.6f, -0.2f), Biomes.OLD_GROWTH_BIRCH_FOREST);
-            addBiome(mapper, NEUTRAL, INLAND, Climate.Parameter.span(-0.2f, 0.2f), Biomes.PLAINS);       // Равнины теперь в центре влажности
+            addBiome(mapper, NEUTRAL, INLAND, Climate.Parameter.span(-0.2f, 0.2f), Biomes.PLAINS);
             addBiome(mapper, NEUTRAL, INLAND, Climate.Parameter.span(0.2f, 0.6f), Biomes.FLOWER_FOREST);
             addBiome(mapper, NEUTRAL, INLAND, Climate.Parameter.span(0.6f, 1.0f), Biomes.FOREST);
 
@@ -90,7 +84,6 @@ public class RwgTerrablender {
             addOceanBiome(mapper, NEUTRAL, OCEAN, Biomes.OCEAN);
             addCoastBiome(mapper, NEUTRAL, Biomes.BEACH);
 
-            // === WARM ===
             addBiome(mapper, WARM, INLAND, FULL_RANGE, Biomes.SAVANNA);
             addBiome(mapper, WARM, HILLS, FULL_RANGE, Biomes.SAVANNA_PLATEAU);
             addBiome(mapper, WARM, HILLS, FULL_RANGE, Biomes.WINDSWEPT_SAVANNA);
@@ -98,14 +91,12 @@ public class RwgTerrablender {
             addOceanBiome(mapper, WARM, OCEAN, Biomes.LUKEWARM_OCEAN);
             addCoastBiome(mapper, WARM, Biomes.BEACH);
 
-            // === HOT ===
             addBiome(mapper, HOT, INLAND, FULL_RANGE, Biomes.DESERT);
             addBiome(mapper, HOT, HILLS, FULL_RANGE, Biomes.STONY_PEAKS);
             addOceanBiome(mapper, HOT, DEEP_OCEAN, Biomes.WARM_OCEAN);
             addOceanBiome(mapper, HOT, OCEAN, Biomes.WARM_OCEAN);
             addCoastBiome(mapper, HOT, Biomes.DESERT);
 
-            // === EXTREME_HOT (Пустоши и их вариации) ===
             addBiome(mapper, EXTREME_HOT, INLAND, Climate.Parameter.span(-1.0f, 0.2f), Biomes.BADLANDS);
             addBiome(mapper, EXTREME_HOT, INLAND, Climate.Parameter.span(0.2f, 1.0f), Biomes.WOODED_BADLANDS);
             addBiome(mapper, EXTREME_HOT, HILLS, FULL_RANGE, Biomes.ERODED_BADLANDS);
@@ -114,7 +105,6 @@ public class RwgTerrablender {
             addCoastBiome(mapper, EXTREME_HOT, Biomes.BADLANDS);
         }
 
-        // Универсальный метод для inland биомов с контролем влажности
         private void addBiome(Consumer<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> mapper,
                               Climate.Parameter temperature,
                               Climate.Parameter continentalness,
@@ -123,12 +113,12 @@ public class RwgTerrablender {
             mapper.accept(Pair.of(
                     Climate.parameters(
                             temperature,
-                            humidity,       // 2-й параметр: влажность
-                            continentalness, // 3-й параметр: континентальность
-                            FULL_RANGE,     // erosion
-                            FULL_RANGE,     // depth
-                            FULL_RANGE,     // weirdness
-                            0.0f            // offset
+                            humidity,
+                            continentalness,
+                            FULL_RANGE,
+                            FULL_RANGE,
+                            FULL_RANGE,
+                            0.0f
                     ),
                     biome
             ));

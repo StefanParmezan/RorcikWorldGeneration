@@ -1,0 +1,9 @@
+{
+  "type": "forge:add_features",
+  "biomes": [
+    "minecraft:plains", "minecraft:forest", "minecraft:taiga", "minecraft:meadow",
+    "minecraft:windswept_hills", "minecraft:windswept_gravelly_hills", "minecraft:desert", "minecraft:badlands", "minecraft:stony_peaks"
+  ],
+  "features": "rwg:boulder",
+  "step": "vegetal_decoration"
+}
