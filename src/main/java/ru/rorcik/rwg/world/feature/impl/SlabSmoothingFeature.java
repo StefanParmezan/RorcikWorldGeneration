@@ -8,12 +8,12 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
-import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import org.slf4j.Logger;
 import ru.rorcik.rwg.RwgBlocks;
+import ru.rorcik.rwg.world.feature.util.SurfaceFinder;
 
 public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -33,19 +33,12 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
             hasLogged = true;
         }
 
-        int surfaceY = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, origin.getX(), origin.getZ());
-        BlockPos surfacePos = new BlockPos(origin.getX(), surfaceY, origin.getZ());
+        BlockPos surfacePos = SurfaceFinder.findSurface(level, origin.getX(), origin.getZ());
         BlockState topState = level.getBlockState(surfacePos);
 
-        if (isStoneBlock(topState)) {
-            return false;
-        }
-        if (!topState.getFluidState().isEmpty()) {
-            return false;
-        }
-        if (topState.getBlock() instanceof SlabBlock) {
-            return false;
-        }
+        if (isStoneBlock(topState)) return false;
+        if (!topState.getFluidState().isEmpty()) return false;
+        if (topState.getBlock() instanceof SlabBlock) return false;
 
         int currentY = surfacePos.getY();
         int lowerNeighbors = 0;
@@ -55,7 +48,7 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
         for (int[] dir : directions) {
             int nx = surfacePos.getX() + dir[0];
             int nz = surfacePos.getZ() + dir[1];
-            int neighborY = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, nx, nz);
+            int neighborY = SurfaceFinder.findSurfaceY(level, nx, nz);
             if (neighborY < currentY) {
                 lowerNeighbors++;
                 minNeighborY = Math.min(minNeighborY, neighborY);

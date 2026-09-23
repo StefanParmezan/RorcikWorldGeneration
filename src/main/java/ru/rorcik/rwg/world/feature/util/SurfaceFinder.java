@@ -9,17 +9,16 @@ import net.minecraft.world.level.levelgen.Heightmap;
 public class SurfaceFinder {
 
     public static int findSurfaceY(WorldGenLevel level, int x, int z) {
-        return level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z);
+        return level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) - 1;
     }
 
     public static BlockPos findSurface(WorldGenLevel level, int x, int z) {
-        int y = findSurfaceY(level, x, z);
-        return new BlockPos(x, y, z);
+        return new BlockPos(x, findSurfaceY(level, x, z), z);
     }
 
     public static boolean isSolidGround(WorldGenLevel level, BlockPos pos) {
-        BlockState below = level.getBlockState(pos.below());
-        return below.isSolid() && !below.is(Blocks.BEDROCK);
+        BlockState state = level.getBlockState(pos);
+        return state.isSolid() && !state.is(Blocks.BEDROCK);
     }
 
     public static boolean isAirOrReplaceable(WorldGenLevel level, BlockPos pos) {

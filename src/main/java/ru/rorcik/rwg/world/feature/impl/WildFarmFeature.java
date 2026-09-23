@@ -5,19 +5,18 @@ import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.block.BeetrootBlock;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import org.slf4j.Logger;
+import ru.rorcik.rwg.world.feature.util.SurfaceFinder;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 
 public class WildFarmFeature extends Feature<NoneFeatureConfiguration> {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -38,14 +37,7 @@ public class WildFarmFeature extends Feature<NoneFeatureConfiguration> {
             hasLogged = true;
         }
 
-        int surfaceY = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, origin.getX(), origin.getZ());
-        BlockPos surfacePos = new BlockPos(origin.getX(), surfaceY, origin.getZ());
-
-        BlockState belowState = level.getBlockState(surfacePos.below());
-        if (!belowState.isSolid()) {
-            return false;
-        }
-
+        BlockPos surfacePos = SurfaceFinder.findSurface(level, origin.getX(), origin.getZ());
         BlockState topState = level.getBlockState(surfacePos);
         if (!isFarmable(topState)) {
             return false;
@@ -54,10 +46,10 @@ public class WildFarmFeature extends Feature<NoneFeatureConfiguration> {
         List<BlockPos> farmBlocks = new ArrayList<>();
         farmBlocks.add(surfacePos);
 
-        for (int[] dir : new int[][]{{1,0}, {-1,0}, {0,1}, {0,-1}}) {
+        for (int[] dir : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
             BlockPos neighbor = surfacePos.offset(dir[0], 0, dir[1]);
-            int neighborY = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, neighbor.getX(), neighbor.getZ());
-            if (Math.abs(neighborY - surfaceY) <= 1) {
+            int neighborY = SurfaceFinder.findSurfaceY(level, neighbor.getX(), neighbor.getZ());
+            if (Math.abs(neighborY - surfacePos.getY()) <= 1) {
                 BlockPos neighborSurface = new BlockPos(neighbor.getX(), neighborY, neighbor.getZ());
                 if (isFarmable(level.getBlockState(neighborSurface))) {
                     farmBlocks.add(neighborSurface);
@@ -96,7 +88,8 @@ public class WildFarmFeature extends Feature<NoneFeatureConfiguration> {
             case 0 -> Blocks.WHEAT.defaultBlockState().setValue(CropBlock.AGE, age);
             case 1 -> Blocks.CARROTS.defaultBlockState().setValue(CropBlock.AGE, age);
             case 2 -> Blocks.POTATOES.defaultBlockState().setValue(CropBlock.AGE, age);
-            case 3 -> Blocks.BEETROOTS.defaultBlockState().setValue(CropBlock.AGE, Math.min(age, 3));
+            case 3 -> Blocks.BEETROOTS.defaultBlockState()
+                    .setValue(BeetrootBlock.AGE, Math.min(age, 3));
             default -> Blocks.WHEAT.defaultBlockState().setValue(CropBlock.AGE, age);
         };
     }

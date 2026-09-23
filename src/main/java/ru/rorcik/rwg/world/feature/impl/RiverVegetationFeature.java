@@ -23,7 +23,7 @@ public class RiverVegetationFeature extends Feature<NoneFeatureConfiguration> {
         BlockPos origin = context.origin();
         RandomSource random = context.random();
 
-        int surfaceY = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, origin.getX(), origin.getZ());
+        int surfaceY = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, origin.getX(), origin.getZ()) - 1;
         BlockPos waterPos = new BlockPos(origin.getX(), surfaceY, origin.getZ());
         BlockState waterState = level.getBlockState(waterPos);
 

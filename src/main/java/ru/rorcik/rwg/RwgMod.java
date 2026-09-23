@@ -17,18 +17,9 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
-import org.slf4j.helpers.NOPLogger;
 import ru.rorcik.rwg.command.DebugTempCommand;
 import ru.rorcik.rwg.world.RwgTerrablender;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 import ru.rorcik.rwg.world.feature.RwgFeatures;
-import ru.rorcik.rwg.world.surface.RwgSurfaceRules;
 
 @Mod(RwgMod.MODID)
 public class RwgMod {
@@ -43,7 +34,6 @@ public class RwgMod {
         RwgBlocks.BLOCKS.register(modEventBus);
         RwgBlocks.ITEMS.register(modEventBus);
         RwgBlocks.CREATIVE_MODE_TABS.register(modEventBus);
-
         RwgFeatures.FEATURES.register(modEventBus);
 
         MinecraftForge.EVENT_BUS.register(this);
@@ -54,8 +44,6 @@ public class RwgMod {
         LOGGER.info("Rorcik World Generation initialized");
 
         event.enqueueWork(RwgTerrablender::init);
-
-        event.enqueueWork(RwgSurfaceRules::init);
     }
 
     @SubscribeEvent

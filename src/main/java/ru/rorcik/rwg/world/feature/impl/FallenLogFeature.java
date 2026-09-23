@@ -11,11 +11,11 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import org.slf4j.Logger;
+import ru.rorcik.rwg.world.feature.util.SurfaceFinder;
 
 public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -36,11 +36,8 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
             hasLogged = true;
         }
 
-        int surfaceY = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, origin.getX(), origin.getZ());
-        BlockPos surfacePos = new BlockPos(origin.getX(), surfaceY, origin.getZ());
-
-        BlockState belowState = level.getBlockState(surfacePos.below());
-        if (!belowState.isSolid()) {
+        BlockPos surfacePos = SurfaceFinder.findSurface(level, origin.getX(), origin.getZ());
+        if (!SurfaceFinder.isSolidGround(level, surfacePos)) {
             return false;
         }
 

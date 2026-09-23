@@ -29,4 +29,7 @@ public class RwgFeatures {
 
     public static final RegistryObject<Feature<NoneFeatureConfiguration>> MOSS_CARPET =
             FEATURES.register("moss_carpet", () -> new MossCarpetFeature(NoneFeatureConfiguration.CODEC));
+
+    public static final RegistryObject<Feature<NoneFeatureConfiguration>> EARTHY_PATCHES =
+            FEATURES.register("earthy_patches", () -> new EarthyPatchesFeature(NoneFeatureConfiguration.CODEC));
 }
