@@ -2,9 +2,11 @@ package ru.rorcik.rwg.world.feature.impl;
 
 import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SlabBlock;
@@ -14,6 +16,9 @@ import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import ru.rorcik.rwg.world.feature.util.SurfaceFinder;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
 
@@ -25,7 +30,8 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     public enum BoulderType {
-        STONE, BLACKSTONE, DEEPSLATE, CALCITE
+        STONE, BLACKSTONE, DEEPSLATE, CALCITE,
+        SANDSTONE, RED_SANDSTONE, ICE, SNOW
     }
 
     @Override
@@ -36,18 +42,39 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
 
         BlockPos surfacePos = SurfaceFinder.findSurface(level, origin.getX(), origin.getZ());
         if (!SurfaceFinder.isSolidGround(level, surfacePos)) return false;
+        if (isTooSteep(level, surfacePos)) return false;
 
+        BoulderType type = pickBoulderTypeByBiome(level, surfacePos, random);
         int radius = 2 + random.nextInt(2);
 
-        BoulderType type = pickBoulderType(random);
+        List<BlockPos> placed = placeBoulder(level, surfacePos, type, radius, random);
+        if (placed.isEmpty()) return false;
 
-        placeBoulder(level, surfacePos, type, radius, random);
-        smoothEdges(level, surfacePos, radius, pickSlabFor(type));
+        placeCapSlab(level, type, placed, random);
+        smoothBase(level, surfacePos, radius, type);
 
         return true;
     }
 
-    private BoulderType pickBoulderType(RandomSource random) {
+    private BoulderType pickBoulderTypeByBiome(WorldGenLevel level, BlockPos pos, RandomSource random) {
+        Holder<Biome> biomeHolder = level.getBiome(pos);
+        String biomeName = biomeHolder.unwrapKey()
+                .map(k -> k.location().toString())
+                .orElse("");
+
+        if (biomeName.equals("minecraft:desert")
+                || biomeName.equals("minecraft:beach")) {
+            return BoulderType.SANDSTONE;
+        }
+
+        if (biomeName.contains("badlands")) {
+            return BoulderType.RED_SANDSTONE;
+        }
+
+        if (isColdBiome(biomeName)) {
+            return random.nextBoolean() ? BoulderType.ICE : BoulderType.SNOW;
+        }
+
         int roll = random.nextInt(100);
         if (roll < 55) return BoulderType.STONE;
         if (roll < 75) return BoulderType.DEEPSLATE;
@@ -55,17 +82,23 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
         return BoulderType.BLACKSTONE;
     }
 
-    private Block pickSlabFor(BoulderType type) {
-        return switch (type) {
-            case BLACKSTONE -> Blocks.BLACKSTONE_SLAB;
-            case DEEPSLATE  -> Blocks.COBBLED_DEEPSLATE_SLAB;
-            case CALCITE    -> Blocks.STONE_SLAB;
-            default         -> Blocks.STONE_SLAB;
-        };
+    private boolean isColdBiome(String name) {
+        return name.equals("minecraft:snowy_plains")
+                || name.equals("minecraft:snowy_taiga")
+                || name.equals("minecraft:snowy_beach")
+                || name.equals("minecraft:ice_spikes")
+                || name.equals("minecraft:frozen_river")
+                || name.equals("minecraft:frozen_ocean")
+                || name.equals("minecraft:deep_frozen_ocean")
+                || name.equals("minecraft:snowy_slopes")
+                || name.equals("minecraft:jagged_peaks")
+                || name.equals("minecraft:frozen_peaks")
+                || name.equals("minecraft:grove");
     }
 
-    private void placeBoulder(WorldGenLevel level, BlockPos center, BoulderType type,
-                              int radius, RandomSource random) {
+    private List<BlockPos> placeBoulder(WorldGenLevel level, BlockPos center,
+                                        BoulderType type, int radius, RandomSource random) {
+        List<BlockPos> placed = new ArrayList<>();
         int r = radius;
 
         for (int dy = -r; dy <= r; dy++) {
@@ -82,9 +115,11 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
 
                     BlockState toPlace = pickBlockForPosition(type, dy, random);
                     level.setBlock(pos, toPlace, 3);
+                    placed.add(pos);
                 }
             }
         }
+        return placed;
     }
 
     private BlockState pickBlockForPosition(BoulderType type, int dy, RandomSource random) {
@@ -111,47 +146,84 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
                 }
                 return Blocks.CALCITE.defaultBlockState();
             }
-            default -> {  // STONE
+            case SANDSTONE -> {
+                int r = random.nextInt(10);
+                if (r < 5) return Blocks.SANDSTONE.defaultBlockState();
+                if (r < 8) return Blocks.SMOOTH_SANDSTONE.defaultBlockState();
+                return Blocks.CUT_SANDSTONE.defaultBlockState();
+            }
+            case RED_SANDSTONE -> {
+                int r = random.nextInt(10);
+                if (r < 5) return Blocks.RED_SANDSTONE.defaultBlockState();
+                if (r < 8) return Blocks.SMOOTH_RED_SANDSTONE.defaultBlockState();
+                return Blocks.CUT_RED_SANDSTONE.defaultBlockState();
+            }
+            case ICE -> {
+                int r = random.nextInt(10);
+                if (r < 6) return Blocks.PACKED_ICE.defaultBlockState();
+                if (r < 9) return Blocks.BLUE_ICE.defaultBlockState();
+                return Blocks.ICE.defaultBlockState();
+            }
+            case SNOW -> {
+                int r = random.nextInt(10);
+                if (r < 8) return Blocks.SNOW_BLOCK.defaultBlockState();
+                return Blocks.POWDER_SNOW.defaultBlockState();
+            }
+            default -> {
                 if (random.nextFloat() < ORE_CHANCE) {
                     return (random.nextBoolean()
                             ? Blocks.COPPER_ORE
                             : Blocks.COAL_ORE).defaultBlockState();
                 }
-                if (random.nextFloat() < 0.08f) {
-                    return Blocks.MOSSY_COBBLESTONE.defaultBlockState();
-                }
-                return Blocks.STONE.defaultBlockState();
+                int r = random.nextInt(10);
+                if (r < 6) return Blocks.STONE.defaultBlockState();
+                if (r < 8) return Blocks.MOSSY_COBBLESTONE.defaultBlockState();
+                return Blocks.ANDESITE.defaultBlockState();
             }
         }
     }
 
-    private boolean canBoulderOverride(BlockState state, int dy) {
-        if (!state.getFluidState().isEmpty()) return false;
-        if (state.is(BlockTags.LOGS)) return false;
-        if (state.is(BlockTags.LEAVES)) return false;
-        if (state.is(BlockTags.FLOWERS)) return false;
-        if (state.is(BlockTags.SAPLINGS)) return false;
-        if (state.is(Blocks.BEDROCK)) return false;
-        if (state.is(Blocks.OBSIDIAN)) return false;
-        if (state.is(Blocks.CRYING_OBSIDIAN)) return false;
+    private void placeCapSlab(WorldGenLevel level, BoulderType type,
+                              List<BlockPos> placed, RandomSource random) {
+        BlockPos highest = null;
+        for (BlockPos p : placed) {
+            if (highest == null
+                    || p.getY() > highest.getY()
+                    || (p.getY() == highest.getY() && random.nextBoolean())) {
+                highest = p;
+            }
+        }
+        if (highest == null) return;
 
-        if (state.isAir()) return dy >= 0;
-        return true;
+        BlockPos above = highest.above();
+        if (!level.getBlockState(above).isAir()) return;
+
+        Block slabBlock = getSlabForType(type);
+        if (slabBlock != null) {
+            level.setBlock(above, slabBlock.defaultBlockState()
+                    .setValue(SlabBlock.TYPE, SlabType.BOTTOM), 3);
+        } else {
+            level.setBlock(above, Blocks.SNOW.defaultBlockState(), 3);
+        }
     }
 
-    private boolean isBoulderBlock(BlockState state) {
-        return state.is(Blocks.STONE) || state.is(Blocks.ANDESITE)
-                || state.is(Blocks.TUFF) || state.is(Blocks.GRANITE)
-                || state.is(Blocks.MOSSY_COBBLESTONE) || state.is(Blocks.COBBLESTONE)
-                || state.is(Blocks.BLACKSTONE) || state.is(Blocks.GILDED_BLACKSTONE)
-                || state.is(Blocks.DEEPSLATE) || state.is(Blocks.CALCITE)
-                || state.is(Blocks.COPPER_ORE) || state.is(Blocks.COAL_ORE)
-                || state.is(Blocks.DEEPSLATE_COPPER_ORE) || state.is(Blocks.DEEPSLATE_COAL_ORE);
+    private Block getSlabForType(BoulderType type) {
+        return switch (type) {
+            case STONE -> Blocks.STONE_SLAB;
+            case BLACKSTONE -> Blocks.BLACKSTONE_SLAB;
+            case DEEPSLATE -> Blocks.COBBLED_DEEPSLATE_SLAB;
+            case CALCITE -> Blocks.STONE_SLAB;
+            case SANDSTONE -> Blocks.SANDSTONE_SLAB;
+            case RED_SANDSTONE -> Blocks.RED_SANDSTONE_SLAB;
+            case ICE, SNOW -> null;
+        };
     }
 
-    private void smoothEdges(WorldGenLevel level, BlockPos center, int radius, Block slabBlock) {
+    private void smoothBase(WorldGenLevel level, BlockPos center, int radius, BoulderType type) {
+        Block slabBlock = getSlabForType(type);
+        if (slabBlock == null) return;
+
         int searchR = radius + 2;
-
         for (int dx = -searchR; dx <= searchR; dx++) {
             for (int dz = -searchR; dz <= searchR; dz++) {
                 int x = center.getX() + dx;
@@ -163,18 +235,18 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
                 if (isBoulderBlock(surfaceState)) continue;
                 if (!surfaceState.isSolid()) continue;
 
-                boolean neighborOneHigher = false;
+                boolean neighborHigher = false;
                 for (int[] dir : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
                     int nx = x + dir[0];
                     int nz = z + dir[1];
                     BlockPos nSurface = SurfaceFinder.findSurface(level, nx, nz);
                     BlockState nState = level.getBlockState(nSurface);
                     if (isBoulderBlock(nState) && nSurface.getY() == surfacePos.getY() + 1) {
-                        neighborOneHigher = true;
+                        neighborHigher = true;
                         break;
                     }
                 }
-                if (!neighborOneHigher) continue;
+                if (!neighborHigher) continue;
 
                 BlockPos slabPos = surfacePos.above();
                 if (!level.getBlockState(slabPos).canBeReplaced()) continue;
@@ -183,5 +255,53 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
                         .setValue(SlabBlock.TYPE, SlabType.BOTTOM), 3);
             }
         }
+    }
+
+    private boolean isBoulderBlock(BlockState state) {
+        return state.is(Blocks.STONE) || state.is(Blocks.ANDESITE)
+                || state.is(Blocks.TUFF) || state.is(Blocks.GRANITE)
+                || state.is(Blocks.MOSSY_COBBLESTONE) || state.is(Blocks.COBBLESTONE)
+                || state.is(Blocks.BLACKSTONE) || state.is(Blocks.GILDED_BLACKSTONE)
+                || state.is(Blocks.DEEPSLATE) || state.is(Blocks.CALCITE)
+                || state.is(Blocks.COPPER_ORE) || state.is(Blocks.COAL_ORE)
+                || state.is(Blocks.DEEPSLATE_COPPER_ORE) || state.is(Blocks.DEEPSLATE_COAL_ORE)
+                || state.is(Blocks.SANDSTONE) || state.is(Blocks.SMOOTH_SANDSTONE)
+                || state.is(Blocks.CUT_SANDSTONE)
+                || state.is(Blocks.RED_SANDSTONE) || state.is(Blocks.SMOOTH_RED_SANDSTONE)
+                || state.is(Blocks.CUT_RED_SANDSTONE)
+                || state.is(Blocks.PACKED_ICE) || state.is(Blocks.BLUE_ICE)
+                || state.is(Blocks.ICE)
+                || state.is(Blocks.SNOW_BLOCK) || state.is(Blocks.POWDER_SNOW);
+    }
+
+    private boolean canBoulderOverride(BlockState state, int dy) {
+        if (!state.getFluidState().isEmpty()) return false;
+        if (state.is(BlockTags.LOGS)) return false;
+        if (state.is(BlockTags.LEAVES)) return false;
+        if (state.is(BlockTags.FLOWERS)) return false;
+        if (state.is(BlockTags.SAPLINGS)) return false;
+        if (state.is(Blocks.BEDROCK)) return false;
+        if (state.is(Blocks.OBSIDIAN)) return false;
+        if (state.is(Blocks.CRYING_OBSIDIAN)) return false;
+        if (state.isAir()) return dy >= 0;
+        return true;
+    }
+
+    private boolean isTooSteep(WorldGenLevel level, BlockPos center) {
+        int y0 = center.getY();
+        int maxDiff = 0;
+        int[][] dirs = {
+                {1, 0}, {-1, 0}, {0, 1}, {0, -1},
+                {1, 1}, {1, -1}, {-1, 1}, {-1, -1},
+                {2, 0}, {-2, 0}, {0, 2}, {0, -2}
+        };
+        for (int[] d : dirs) {
+            int nY = SurfaceFinder.findSurfaceY(level,
+                    center.getX() + d[0], center.getZ() + d[1]);
+            int diff = Math.abs(nY - y0);
+            if (diff > maxDiff) maxDiff = diff;
+            if (maxDiff > 3) return true;
+        }
+        return false;
     }
 }

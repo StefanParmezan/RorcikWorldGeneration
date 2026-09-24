@@ -53,6 +53,11 @@ public class RwgConfig {
     public static final ForgeConfigSpec.IntValue CAVE_MAX_Y;
     public static final ForgeConfigSpec.BooleanValue SMOOTH_CAVE_WALLS;
     public static final ForgeConfigSpec.BooleanValue EXPOSE_CAVES_IN_MOUNTAINS;
+    public static final ForgeConfigSpec.BooleanValue ENABLE_EARTHY_PATCH_DECORATIONS;
+    public static final ForgeConfigSpec.BooleanValue ENABLE_DEAD_BUSH_ON_PODZOL;
+    public static final ForgeConfigSpec.BooleanValue ENABLE_FERN_ON_COARSE_DIRT;
+    public static final ForgeConfigSpec.BooleanValue ENABLE_MOSS_ON_MOSSY_COBBLESTONE;
+
 
     public static final ForgeConfigSpec.BooleanValue SUPPRESS_DENSITY_WARNINGS;
 
@@ -112,6 +117,26 @@ public class RwgConfig {
                 )
                 .define("suppress_density_warnings", true);
 
+        BUILDER.push("vegetation");
+
+        ENABLE_EARTHY_PATCH_DECORATIONS = BUILDER
+                .comment("Master switch: allow vegetation on top of earthy patches (dead bush, ferns, moss)")
+                .define("enable_earthy_patch_decorations", true);
+
+        ENABLE_DEAD_BUSH_ON_PODZOL = BUILDER
+                .comment("Allow dead bushes to appear on podzol patches")
+                .define("enable_dead_bush_on_podzol", true);
+
+        ENABLE_FERN_ON_COARSE_DIRT = BUILDER
+                .comment("Allow ferns and large ferns to appear on coarse dirt patches")
+                .define("enable_fern_on_coarse_dirt", true);
+
+        ENABLE_MOSS_ON_MOSSY_COBBLESTONE = BUILDER
+                .comment("Allow moss carpet to appear on mossy cobblestone patches")
+                .define("enable_moss_on_mossy_cobblestone", true);
+
+        BUILDER.pop();
+
         BUILDER.pop();
     }
 
@@ -122,6 +147,11 @@ public class RwgConfig {
     public static double highwaySpawnChance;
     public static boolean applyJoinWorldSpawnMixin;
 
+
+    public static boolean enableEarthyPatchDecorations;
+    public static boolean enableDeadBushOnPodzol;
+    public static boolean enableFernOnCoarseDirt;
+    public static boolean enableMossOnMossyCobblestone;
     public static boolean enableOldCaves;
     public static boolean disableVanillaCaves;
     public static boolean disableCanyons;
@@ -153,6 +183,10 @@ public class RwgConfig {
         smoothCaveWalls = SMOOTH_CAVE_WALLS.get();
         exposeCavesInMountains = EXPOSE_CAVES_IN_MOUNTAINS.get();
 
+        enableEarthyPatchDecorations    = ENABLE_EARTHY_PATCH_DECORATIONS.get();
+        enableDeadBushOnPodzol          = ENABLE_DEAD_BUSH_ON_PODZOL.get();
+        enableFernOnCoarseDirt          = ENABLE_FERN_ON_COARSE_DIRT.get();
+        enableMossOnMossyCobblestone    = ENABLE_MOSS_ON_MOSSY_COBBLESTONE.get();
         suppressDensityWarnings = SUPPRESS_DENSITY_WARNINGS.get();
     }
 }

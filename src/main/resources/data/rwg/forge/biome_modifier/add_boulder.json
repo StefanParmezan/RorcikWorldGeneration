@@ -1,8 +1,45 @@
 {
   "type": "forge:add_features",
   "biomes": [
-    "minecraft:plains", "minecraft:forest", "minecraft:taiga", "minecraft:meadow",
-    "minecraft:windswept_hills", "minecraft:windswept_gravelly_hills", "minecraft:desert", "minecraft:badlands", "minecraft:stony_peaks"
+    "minecraft:plains",
+    "minecraft:sunflower_plains",
+    "minecraft:forest",
+    "minecraft:flower_forest",
+    "minecraft:birch_forest",
+    "minecraft:old_growth_birch_forest",
+    "minecraft:dark_forest",
+
+    "minecraft:taiga",
+    "minecraft:old_growth_pine_taiga",
+    "minecraft:old_growth_spruce_taiga",
+
+    "minecraft:meadow",
+    "minecraft:windswept_hills",
+    "minecraft:windswept_gravelly_hills",
+    "minecraft:windswept_forest",
+
+    "minecraft:savanna",
+    "minecraft:savanna_plateau",
+    "minecraft:windswept_savanna",
+
+    "minecraft:stony_peaks",
+
+    "minecraft:desert",
+    "minecraft:beach",
+
+    "minecraft:badlands",
+    "minecraft:eroded_badlands",
+    "minecraft:wooded_badlands",
+
+    "minecraft:snowy_plains",
+    "minecraft:snowy_taiga",
+    "minecraft:snowy_beach",
+    "minecraft:ice_spikes",
+    "minecraft:grove",
+    "minecraft:snowy_slopes",
+    "minecraft:jagged_peaks",
+    "minecraft:frozen_peaks",
+    "minecraft:frozen_river"
   ],
   "features": "rwg:boulder",
   "step": "vegetal_decoration"

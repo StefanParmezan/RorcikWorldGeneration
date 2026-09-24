@@ -1,9 +1,6 @@
 {
   "type": "forge:add_features",
-  "biomes": [
-    "minecraft:plains", "minecraft:forest", "minecraft:birch_forest",
-    "minecraft:taiga", "minecraft:meadow", "minecraft:sunflower_plains", "minecraft:dark_forest"
-  ],
+  "biomes": "#minecraft:is_overworld",
   "features": "rwg:slab_smoothing",
   "step": "vegetal_decoration"
 }
