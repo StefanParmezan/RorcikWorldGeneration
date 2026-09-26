@@ -20,11 +20,13 @@ import ru.rorcik.rwg.world.feature.util.SurfaceFinder;
 
 public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
 
-    private static final float DEAD_BUSH_CHANCE = 0.05f;
-    private static final float FERN_CHANCE = 0.22f;
-    private static final float LARGE_FERN_RATIO = 0.40f;
-    private static final float MOSS_CHANCE = 0.35f;
-    private static final float DRIPSTONE_CHANCE = 0.25f;
+    private static final float DEAD_BUSH_CHANCE        = 0.05f;
+    private static final float FERN_CHANCE             = 0.22f;
+    private static final float LARGE_FERN_RATIO        = 0.40f;
+    private static final float MOSS_CHANCE             = 0.35f;
+    private static final float DRIPSTONE_CHANCE        = 0.25f;
+
+    private enum PatchKind { EARTHY, STONE, SANDY, RED_SANDY }
 
     public EarthyPatchesFeature(Codec<NoneFeatureConfiguration> codec) {
         super(codec);
@@ -41,11 +43,8 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
 
         if (!isValidSurface(topState)) return false;
 
-        boolean mountainBiome = isMountainBiome(level, surfacePos);
-
-        Block patchBlock = mountainBiome
-                ? pickStonePatchBlock(random)
-                : pickEarthyPatchBlock(random);
+        PatchKind kind = pickPatchKind(level, surfacePos);
+        Block patchBlock = pickPatchBlock(kind, random);
 
         int radius = 1;
         int placed = 0;
@@ -69,15 +68,23 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
                 BlockPos abovePos = pos.above();
                 if (!level.getBlockState(abovePos).isAir()) continue;
 
-                if (!mountainBiome) {
-                    decorateEarthy(level, abovePos, patchBlock, random);
-                } else {
-                    decorateStone(level, abovePos, patchBlock, random);
+                switch (kind) {
+                    case EARTHY    -> decorateEarthy(level, abovePos, patchBlock, random);
+                    case STONE     -> decorateStone(level, abovePos, patchBlock, random);
                 }
             }
         }
 
         return placed > 0;
+    }
+
+    private Block pickPatchBlock(PatchKind kind, RandomSource random) {
+        return switch (kind) {
+            case EARTHY    -> pickEarthyPatchBlock(random);
+            case STONE     -> pickStonePatchBlock(random);
+            case SANDY     -> pickSandyPatchBlock(random);
+            case RED_SANDY -> pickRedSandyPatchBlock(random);
+        };
     }
 
     private void decorateEarthy(WorldGenLevel level, BlockPos abovePos,
@@ -119,14 +126,29 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
                 || s.is(Blocks.ANDESITE)
                 || s.is(Blocks.TUFF)
                 || s.is(Blocks.CALCITE)
-                || s.is(Blocks.GRAVEL);
+                || s.is(Blocks.GRAVEL)
+                || s.is(Blocks.SAND)
+                || s.is(Blocks.RED_SAND)
+                || s.is(Blocks.SANDSTONE)
+                || s.is(Blocks.SMOOTH_SANDSTONE)
+                || s.is(Blocks.RED_SANDSTONE)
+                || s.is(Blocks.SMOOTH_RED_SANDSTONE);
     }
 
-    private boolean isMountainBiome(WorldGenLevel level, BlockPos pos) {
+    private PatchKind pickPatchKind(WorldGenLevel level, BlockPos pos) {
         String name = level.getBiome(pos).unwrapKey()
                 .map(k -> k.location().toString())
                 .orElse("");
 
+        if (name.contains("badlands")) return PatchKind.RED_SANDY;
+        if (name.equals("minecraft:desert") || name.equals("minecraft:beach")) {
+            return PatchKind.SANDY;
+        }
+        if (isMountainBiome(name)) return PatchKind.STONE;
+        return PatchKind.EARTHY;
+    }
+
+    private boolean isMountainBiome(String name) {
         return name.contains("stony")
                 || name.contains("jagged_peaks")
                 || name.contains("frozen_peaks")
@@ -181,5 +203,20 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
         if (roll < 80) return Blocks.ANDESITE;
         if (roll < 92) return Blocks.TUFF;
         return Blocks.DRIPSTONE_BLOCK;
+    }
+
+    private Block pickSandyPatchBlock(RandomSource random) {
+        int roll = random.nextInt(100);
+        if (roll < 15) return Blocks.SANDSTONE;
+        if (roll < 30) return Blocks.SMOOTH_SANDSTONE;
+        if (roll < 40) return Blocks.SUSPICIOUS_SAND;
+        return Blocks.SAND;
+    }
+
+    private Block pickRedSandyPatchBlock(RandomSource random) {
+        int roll = random.nextInt(100);
+        if (roll < 15) return Blocks.RED_SANDSTONE;
+        if (roll < 30) return Blocks.SMOOTH_RED_SANDSTONE;
+        return Blocks.RED_SAND;
     }
 }

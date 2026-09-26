@@ -10,7 +10,13 @@
     "minecraft:windswept_hills", "minecraft:windswept_gravelly_hills",
     "minecraft:stony_peaks", "minecraft:stony_shore",
     "minecraft:jagged_peaks", "minecraft:frozen_peaks",
-    "minecraft:snowy_slopes", "minecraft:grove"
+    "minecraft:snowy_slopes", "minecraft:grove",
+
+    "minecraft:desert",
+    "minecraft:beach",
+    "minecraft:badlands",
+    "minecraft:eroded_badlands",
+    "minecraft:wooded_badlands"
   ],
   "features": "rwg:earthy_patches",
   "step": "vegetal_decoration"

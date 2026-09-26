@@ -198,6 +198,8 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
             return Blocks.NETHER_BRICK_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
         if (state.is(Blocks.END_STONE))
             return Blocks.END_STONE_BRICK_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
+        if (state.is(Blocks.SUSPICIOUS_SAND))
+            return RwgBlocks.SAND_SLAB.get().defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
 
         return null;
     }

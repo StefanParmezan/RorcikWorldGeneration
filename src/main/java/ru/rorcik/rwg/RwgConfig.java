@@ -21,7 +21,6 @@ public class RwgConfig {
                     "minecraft:bamboo_jungle",
                     "minecraft:mangrove_swamp",
                     "minecraft:swamp",
-                    "minecraft:lush_caves",
                     "minecraft:ice_spikes",
                     "minecraft:cherry_grove"
             ), obj -> obj instanceof String);

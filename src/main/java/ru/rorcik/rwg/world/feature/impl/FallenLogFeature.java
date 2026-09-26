@@ -18,14 +18,18 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
 import org.slf4j.Logger;
 import ru.rorcik.rwg.world.feature.util.SurfaceFinder;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static boolean hasLogged = false;
 
-    private static final float SPAWN_CHANCE              = 0.35f;
-    private static final float STRIPPED_PER_BLOCK_CHANCE = 0.25f;
-    private static final float LEAF_CAP_CHANCE           = 0.20f;
-    private static final float MUSHROOM_CHANCE           = 0.35f;
+    private static final float SPAWN_CHANCE                 = 0.35f;
+    private static final float STRIPPED_PER_BLOCK_CHANCE    = 0.25f;
+    private static final float LEAF_CAP_CHANCE              = 0.20f;
+    private static final float MUSHROOM_ON_LOG_CHANCE       = 0.35f;
+    private static final float MUSHROOM_ON_GROUND_CHANCE    = 0.35f;
 
     public FallenLogFeature(Codec<NoneFeatureConfiguration> codec) {
         super(codec);
@@ -56,8 +60,7 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
         boolean isXAxis = random.nextBoolean();
         Direction.Axis axis = isXAxis ? Direction.Axis.X : Direction.Axis.Z;
 
-        int placedCount = 0;
-        BlockPos lastLogPos = null;
+        List<BlockPos> placedLogs = new ArrayList<>();
 
         for (int i = 0; i < length; i++) {
             int dx = isXAxis ? i : 0;
@@ -65,7 +68,7 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
             BlockPos pos = surfacePos.offset(dx, 1, dz);
 
             BlockState existing = level.getBlockState(pos);
-            if (!canLogOverride(existing)) {
+            if (!canLogOverride(level, pos, existing)) {
                 continue;
             }
 
@@ -82,24 +85,28 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
             BlockState logState = pillar.defaultBlockState()
                     .setValue(BlockStateProperties.AXIS, axis);
             level.setBlock(pos, logState, 3);
-            placedCount++;
-            lastLogPos = pos;
+            placedLogs.add(pos);
         }
 
-        if (placedCount > 0 && lastLogPos != null) {
-            if (random.nextFloat() < LEAF_CAP_CHANCE) {
-                placeLeafCap(level, lastLogPos, getLeavesForLog(baseLog), random);
-            }
-            tryPlaceMushroom(level, lastLogPos, isXAxis, random);
+        if (placedLogs.isEmpty()) return false;
+
+        BlockPos lastLogPos = placedLogs.get(placedLogs.size() - 1);
+
+        for (BlockPos logPos : placedLogs) {
+            tryPlaceMushroomOnLog(level, logPos, random);
         }
 
-        if (placedCount > 0) {
-            LOGGER.info("[RWG] Placed fallen log ({} blocks) at {}", placedCount, surfacePos);
+        if (random.nextFloat() < LEAF_CAP_CHANCE) {
+            placeLeafCap(level, lastLogPos, getLeavesForLog(baseLog), random);
         }
-        return placedCount > 0;
+
+        tryPlaceMushroomOnGround(level, lastLogPos, isXAxis, random);
+
+        LOGGER.info("[RWG] Placed fallen log ({} blocks) at {}", placedLogs.size(), surfacePos);
+        return true;
     }
 
-    private boolean canLogOverride(BlockState state) {
+    private boolean canLogOverride(WorldGenLevel level, BlockPos pos, BlockState state) {
         if (!state.getFluidState().isEmpty()) return false;
         if (state.is(BlockTags.LOGS)) return false;
         if (state.is(BlockTags.LEAVES)) return false;
@@ -108,7 +115,7 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
         if (state.is(Blocks.CRYING_OBSIDIAN)) return false;
         if (state.isAir()) return true;
         if (state.canBeReplaced()) return true;
-        if (state.getCollisionShape(null, BlockPos.ZERO).isEmpty()) return true;
+        if (state.getCollisionShape(level, pos).isEmpty()) return true;
         return false;
     }
 
@@ -133,11 +140,27 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
         }
     }
 
-    private void tryPlaceMushroom(WorldGenLevel level, BlockPos lastLogPos,
-                                  boolean isXAxis, RandomSource random) {
-        if (random.nextFloat() >= MUSHROOM_CHANCE) return;
+    private void tryPlaceMushroomOnLog(WorldGenLevel level, BlockPos logPos, RandomSource random) {
+        if (random.nextFloat() >= MUSHROOM_ON_LOG_CHANCE) return;
 
-        Block mushroomBlock = random.nextBoolean() ? Blocks.RED_MUSHROOM : Blocks.BROWN_MUSHROOM;
+        BlockPos above = logPos.above();
+        BlockState aboveState = level.getBlockState(above);
+        if (!aboveState.isAir()) return;
+
+        Block mushroomBlock = random.nextBoolean()
+                ? Blocks.RED_MUSHROOM
+                : Blocks.BROWN_MUSHROOM;
+
+        level.setBlock(above, mushroomBlock.defaultBlockState(), 3);
+    }
+
+    private void tryPlaceMushroomOnGround(WorldGenLevel level, BlockPos lastLogPos,
+                                          boolean isXAxis, RandomSource random) {
+        if (random.nextFloat() >= MUSHROOM_ON_GROUND_CHANCE) return;
+
+        Block mushroomBlock = random.nextBoolean()
+                ? Blocks.RED_MUSHROOM
+                : Blocks.BROWN_MUSHROOM;
 
         int[][] offsets = isXAxis
                 ? new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}
@@ -154,7 +177,7 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
 
             BlockPos placePos = groundPos.above();
             BlockState existing = level.getBlockState(placePos);
-            if (!existing.isAir() && !existing.canBeReplaced()) continue;
+            if (!existing.isAir()) continue;
 
             BlockState below = level.getBlockState(placePos.below());
             if (!below.isSolid()) continue;
@@ -180,7 +203,8 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
         }
         if (name.equals("minecraft:plains")
                 || name.equals("minecraft:sunflower_plains")
-                || name.equals("minecraft:meadow")) {
+                || name.equals("minecraft:meadow")
+                || name.equals("minecraft:flower_forest")) {
             return Blocks.OAK_LOG;
         }
 
