@@ -38,6 +38,9 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
 
         int placed = 0;
 
+        int[][] dirs     = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+        int[][] opposite = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+
         for (int lx = 0; lx < 16; lx++) {
             for (int lz = 0; lz < 16; lz++) {
                 BlockPos ground = groundPos[lx * 16 + lz];
@@ -47,20 +50,29 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
                 if (slabState == null) continue;
 
                 int currentY = ground.getY();
-                boolean hasHigherNeighbor = false;
+                boolean shouldPlace = false;
 
-                int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
-                for (int[] dir : dirs) {
-                    int nlx = lx + dir[0];
-                    int nlz = lz + dir[1];
+                for (int i = 0; i < 4; i++) {
+                    int nlx = lx + dirs[i][0];
+                    int nlz = lz + dirs[i][1];
                     if (nlx < 0 || nlx > 15 || nlz < 0 || nlz > 15) continue;
+
                     BlockPos nGround = groundPos[nlx * 16 + nlz];
-                    if (nGround != null && nGround.getY() == currentY + 1) {
-                        hasHigherNeighbor = true;
+                    if (nGround == null || nGround.getY() != currentY + 1) continue;
+
+                    int olx = lx + opposite[i][0];
+                    int olz = lz + opposite[i][1];
+                    if (olx < 0 || olx > 15 || olz < 0 || olz > 15) {
+                        shouldPlace = true;
+                        break;
+                    }
+                    BlockPos oGround = groundPos[olx * 16 + olz];
+                    if (oGround == null || oGround.getY() >= currentY) {
+                        shouldPlace = true;
                         break;
                     }
                 }
-                if (!hasHigherNeighbor) continue;
+                if (!shouldPlace) continue;
 
                 BlockPos abovePos = ground.above();
                 BlockState aboveState = level.getBlockState(abovePos);
@@ -69,7 +81,6 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
                 if (aboveState.is(BlockTags.LEAVES)) continue;
                 if (aboveState.is(Blocks.BEDROCK)) continue;
                 if (!aboveState.getFluidState().isEmpty()) continue;
-
                 if (!canReplaceAbove(level, abovePos, aboveState)) continue;
 
                 level.setBlock(abovePos, slabState, 3);
