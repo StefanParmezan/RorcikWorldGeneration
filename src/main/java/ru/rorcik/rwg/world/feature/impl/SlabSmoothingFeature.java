@@ -184,20 +184,6 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
         if (state.is(Blocks.CUT_RED_SANDSTONE))
             return Blocks.CUT_RED_SANDSTONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
 
-        if (state.is(Blocks.MUD))
-            return Blocks.MUD_BRICK_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.MUD_BRICKS))
-            return Blocks.MUD_BRICK_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.PRISMARINE))
-            return Blocks.PRISMARINE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.PRISMARINE_BRICKS))
-            return Blocks.PRISMARINE_BRICK_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.DARK_PRISMARINE))
-            return Blocks.DARK_PRISMARINE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.NETHERRACK))
-            return Blocks.NETHER_BRICK_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.END_STONE))
-            return Blocks.END_STONE_BRICK_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
         if (state.is(Blocks.SUSPICIOUS_SAND))
             return RwgBlocks.SAND_SLAB.get().defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
 

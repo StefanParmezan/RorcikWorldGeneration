@@ -15,16 +15,22 @@ import net.minecraft.world.level.block.state.properties.DripstoneThickness;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
+import ru.rorcik.rwg.RwgBlocks;
 import ru.rorcik.rwg.RwgConfig;
+import ru.rorcik.rwg.block.BuddingDioriteBlock;
 import ru.rorcik.rwg.world.feature.util.SurfaceFinder;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
 
-    private static final float DEAD_BUSH_CHANCE        = 0.05f;
-    private static final float FERN_CHANCE             = 0.22f;
-    private static final float LARGE_FERN_RATIO        = 0.40f;
-    private static final float MOSS_CHANCE             = 0.35f;
-    private static final float DRIPSTONE_CHANCE        = 0.25f;
+    private static final float DEAD_BUSH_CHANCE = 0.05f;
+    private static final float FERN_CHANCE      = 0.22f;
+    private static final float LARGE_FERN_RATIO = 0.40f;
+    private static final float MOSS_CHANCE      = 0.35f;
+    private static final float DRIPSTONE_CHANCE = 0.25f;
+    private static final float DRY_GRASS_CHANCE = 0.3f;
 
     private enum PatchKind { EARTHY, STONE, SANDY, RED_SANDY }
 
@@ -48,6 +54,7 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
 
         int radius = 1;
         int placed = 0;
+        List<BlockPos> buddingPositions = new ArrayList<>();
 
         for (int dx = -radius; dx <= radius; dx++) {
             for (int dz = -radius; dz <= radius; dz++) {
@@ -63,6 +70,10 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
                 level.setBlock(pos, patchBlock.defaultBlockState(), 3);
                 placed++;
 
+                if (patchBlock == RwgBlocks.BUDDING_DIORITE.get()) {
+                    buddingPositions.add(pos.immutable());
+                }
+
                 if (!RwgConfig.enableEarthyPatchDecorations) continue;
 
                 BlockPos abovePos = pos.above();
@@ -71,11 +82,26 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
                 switch (kind) {
                     case EARTHY    -> decorateEarthy(level, abovePos, patchBlock, random);
                     case STONE     -> decorateStone(level, abovePos, patchBlock, random);
+                    case SANDY     -> decorateSandy(level, abovePos, patchBlock, random);
                 }
             }
         }
 
+        for (BlockPos buddingPos : buddingPositions) {
+            BuddingDioriteBlock.trySeedInitialCrystal(level, buddingPos, random);
+        }
+
         return placed > 0;
+    }
+
+    private void decorateSandy(WorldGenLevel level, BlockPos abovePos,
+                               Block patchBlock, RandomSource random) {
+        if (patchBlock == Blocks.SUSPICIOUS_SAND) {
+            if (random.nextFloat() < DRY_GRASS_CHANCE) {
+                level.setBlock(abovePos, RwgBlocks.DRY_GRASS.get().defaultBlockState(), 3);
+            }
+            return;
+        }
     }
 
     private Block pickPatchBlock(PatchKind kind, RandomSource random) {
@@ -198,8 +224,9 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
 
     private Block pickStonePatchBlock(RandomSource random) {
         int roll = random.nextInt(100);
-        if (roll < 30) return Blocks.GRANITE;
-        if (roll < 55) return Blocks.DIORITE;
+        if (roll < 8) return RwgBlocks.BUDDING_DIORITE.get();
+        if (roll < 35) return Blocks.GRANITE;
+        if (roll < 58) return Blocks.DIORITE;
         if (roll < 80) return Blocks.ANDESITE;
         if (roll < 92) return Blocks.TUFF;
         return Blocks.DRIPSTONE_BLOCK;

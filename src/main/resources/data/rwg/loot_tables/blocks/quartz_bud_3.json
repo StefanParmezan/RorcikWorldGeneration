@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "rwg:quartz_bud_3",
+          "conditions": [
+            {
+              "condition": "minecraft:match_tool",
+              "predicate": {
+                "enchantments": [
+                  { "enchantment": "minecraft:silk_touch", "levels": { "min": 1 } }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

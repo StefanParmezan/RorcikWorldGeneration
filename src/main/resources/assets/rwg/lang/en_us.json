@@ -7,5 +7,12 @@
   "block.rwg.sand_slab": "Sand Slab",
   "block.rwg.red_sand_slab": "Red Sand Slab",
   "block.rwg.gravel_slab": "Gravel Slab",
+  "block.rwg.quartz_bud_1": "Small Quartz Bud",
+  "block.rwg.quartz_bud_2": "Medium Quartz Bud",
+  "block.rwg.quartz_bud_3": "Large Quartz Bud",
+  "block.rwg.quartz_cluster": "Quartz Cluster",
+  "item.minecraft.quartz": "Quartz Crystal",
+  "block.rwg.dry_grass": "Dry Grass",
+
   "itemGroup.rwg": "Rorcik World Generation"
 }

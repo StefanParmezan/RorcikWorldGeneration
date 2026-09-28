@@ -17,10 +17,10 @@ ordering="NONE"
 side="BOTH"
 
 [[dependencies.rwg]]
-modId="minecraft"
-mandatory=true
-versionRange="${minecraft_version_range}"
-ordering="NONE"
+modId="dynamictreesplus"
+mandatory=false
+versionRange="[1.0,)"
+ordering="AFTER"
 side="BOTH"
 
 [[dependencies.rwg]]

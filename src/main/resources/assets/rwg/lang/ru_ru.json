@@ -7,5 +7,11 @@
   "block.rwg.sand_slab": "Песчаная плита",
   "block.rwg.red_sand_slab": "Плита из красного песка",
   "block.rwg.gravel_slab": "Гравийная плита",
+  "block.rwg.quartz_bud_1": "Малый кварцевый бутон",
+  "block.rwg.quartz_bud_2": "Средний кварцевый бутон",
+  "block.rwg.quartz_bud_3": "Большой кварцевый бутон",
+  "block.rwg.quartz_cluster": "Кварцевая друза",
+  "item.minecraft.quartz": "Кварцевый кристалл",
+  "block.rwg.dry_grass": "Сухая трава",
   "itemGroup.rwg": "Rorcik World Generation"
 }

@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "facing=up":    { "model": "rwg:block/quartz_bud_1" },
+    "facing=down":  { "model": "rwg:block/quartz_bud_1", "x": 180 },
+    "facing=north": { "model": "rwg:block/quartz_bud_1", "x": 90 },
+    "facing=south": { "model": "rwg:block/quartz_bud_1", "x": 90, "y": 180 },
+    "facing=west":  { "model": "rwg:block/quartz_bud_1", "x": 90, "y": 270 },
+    "facing=east":  { "model": "rwg:block/quartz_bud_1", "x": 90, "y": 90 }
+  }
+}
