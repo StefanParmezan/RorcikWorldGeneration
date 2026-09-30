@@ -24,7 +24,7 @@ import ru.rorcik.rwg.world.feature.RwgFeatures;
 @Mod(RwgMod.MODID)
 public class RwgMod {
     public static final String MODID = "rwg";
-    private static final Logger LOGGER = LogUtils.getLogger();
+    public static final Logger LOGGER = LogUtils.getLogger();
 
     public RwgMod(FMLJavaModLoadingContext context) {
         IEventBus modEventBus = context.getModEventBus();

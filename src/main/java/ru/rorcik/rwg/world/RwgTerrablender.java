@@ -19,7 +19,7 @@ public class RwgTerrablender {
         Regions.register(new RwgRegion(
                 ResourceLocation.fromNamespaceAndPath("rwg", "overworld"),
                 RegionType.OVERWORLD,
-                100000
+                10
         ));
     }
 
@@ -37,6 +37,7 @@ public class RwgTerrablender {
         private static final Climate.Parameter DEEP_OCEAN   = Climate.Parameter.span(-1.0f, -0.45f);
         private static final Climate.Parameter OCEAN        = Climate.Parameter.span(-0.45f, -0.19f);
         private static final Climate.Parameter COAST        = Climate.Parameter.span(-0.19f, -0.03f);
+        private static final Climate.Parameter RIVER_VALLEY = Climate.Parameter.span(-0.11f, 0.03f);
         private static final Climate.Parameter INLAND       = Climate.Parameter.span(-0.03f, 0.3f);
         private static final Climate.Parameter HILLS        = Climate.Parameter.span(0.3f, 1.0f);
 
@@ -47,6 +48,16 @@ public class RwgTerrablender {
         @Override
         public void addBiomes(Registry<Biome> registry, Consumer<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> mapper) {
 
+            // ===== Rivers =====
+            addRiverBiome(mapper, EXTREME_COLD, Biomes.FROZEN_RIVER);
+            addRiverBiome(mapper, COLD,         Biomes.FROZEN_RIVER);
+            addRiverBiome(mapper, COOL,         Biomes.RIVER);
+            addRiverBiome(mapper, NEUTRAL,      Biomes.RIVER);
+            addRiverBiome(mapper, WARM,         Biomes.RIVER);
+            addRiverBiome(mapper, HOT,          Biomes.RIVER);
+            addRiverBiome(mapper, EXTREME_HOT,  Biomes.RIVER);
+
+            // ===== Extreme cold =====
             addBiome(mapper, EXTREME_COLD, INLAND, FULL_RANGE, Biomes.SNOWY_PLAINS);
             addBiome(mapper, EXTREME_COLD, HILLS, FULL_RANGE, Biomes.FROZEN_PEAKS);
             addBiome(mapper, EXTREME_COLD, HILLS, FULL_RANGE, Biomes.SNOWY_SLOPES);
@@ -54,6 +65,7 @@ public class RwgTerrablender {
             addOceanBiome(mapper, EXTREME_COLD, OCEAN, Biomes.FROZEN_OCEAN);
             addCoastBiome(mapper, EXTREME_COLD, Biomes.SNOWY_PLAINS);
 
+            // ===== Cold =====
             addBiome(mapper, COLD, INLAND, FULL_RANGE, Biomes.SNOWY_TAIGA);
             addBiome(mapper, COLD, HILLS, FULL_RANGE, Biomes.JAGGED_PEAKS);
             addBiome(mapper, COLD, HILLS, FULL_RANGE, Biomes.GROVE);
@@ -61,11 +73,11 @@ public class RwgTerrablender {
             addOceanBiome(mapper, COLD, OCEAN, Biomes.COLD_OCEAN);
             addCoastBiome(mapper, COLD, Biomes.SNOWY_BEACH);
 
+            // ===== Cool =====
             addBiome(mapper, COOL, INLAND, Climate.Parameter.span(-1.0f, -0.5f), Biomes.OLD_GROWTH_SPRUCE_TAIGA);
             addBiome(mapper, COOL, INLAND, Climate.Parameter.span(-0.5f, 0.0f), Biomes.DARK_FOREST);
             addBiome(mapper, COOL, INLAND, Climate.Parameter.span(0.0f, 0.5f), Biomes.TAIGA);
             addBiome(mapper, COOL, INLAND, Climate.Parameter.span(0.5f, 1.0f), Biomes.OLD_GROWTH_PINE_TAIGA);
-
             addBiome(mapper, COOL, HILLS, FULL_RANGE, Biomes.WINDSWEPT_HILLS);
             addBiome(mapper, COOL, HILLS, FULL_RANGE, Biomes.WINDSWEPT_GRAVELLY_HILLS);
             addBiome(mapper, COOL, HILLS, FULL_RANGE, Biomes.WINDSWEPT_FOREST);
@@ -73,17 +85,18 @@ public class RwgTerrablender {
             addOceanBiome(mapper, COOL, OCEAN, Biomes.OCEAN);
             addCoastBiome(mapper, COOL, Biomes.STONY_SHORE);
 
+            // ===== Neutral =====
             addBiome(mapper, NEUTRAL, INLAND, Climate.Parameter.span(-1.0f, -0.6f), Biomes.SUNFLOWER_PLAINS);
             addBiome(mapper, NEUTRAL, INLAND, Climate.Parameter.span(-0.6f, -0.2f), Biomes.OLD_GROWTH_BIRCH_FOREST);
             addBiome(mapper, NEUTRAL, INLAND, Climate.Parameter.span(-0.2f, 0.2f), Biomes.PLAINS);
             addBiome(mapper, NEUTRAL, INLAND, Climate.Parameter.span(0.2f, 0.6f), Biomes.FLOWER_FOREST);
             addBiome(mapper, NEUTRAL, INLAND, Climate.Parameter.span(0.6f, 1.0f), Biomes.FOREST);
-
             addBiome(mapper, NEUTRAL, HILLS, FULL_RANGE, Biomes.MEADOW);
             addOceanBiome(mapper, NEUTRAL, DEEP_OCEAN, Biomes.OCEAN);
             addOceanBiome(mapper, NEUTRAL, OCEAN, Biomes.OCEAN);
             addCoastBiome(mapper, NEUTRAL, Biomes.BEACH);
 
+            // ===== Warm =====
             addBiome(mapper, WARM, INLAND, FULL_RANGE, Biomes.SAVANNA);
             addBiome(mapper, WARM, HILLS, FULL_RANGE, Biomes.SAVANNA_PLATEAU);
             addBiome(mapper, WARM, HILLS, FULL_RANGE, Biomes.WINDSWEPT_SAVANNA);
@@ -91,18 +104,37 @@ public class RwgTerrablender {
             addOceanBiome(mapper, WARM, OCEAN, Biomes.LUKEWARM_OCEAN);
             addCoastBiome(mapper, WARM, Biomes.BEACH);
 
+            // ===== Hot =====
             addBiome(mapper, HOT, INLAND, FULL_RANGE, Biomes.DESERT);
             addBiome(mapper, HOT, HILLS, FULL_RANGE, Biomes.STONY_PEAKS);
             addOceanBiome(mapper, HOT, DEEP_OCEAN, Biomes.WARM_OCEAN);
             addOceanBiome(mapper, HOT, OCEAN, Biomes.WARM_OCEAN);
             addCoastBiome(mapper, HOT, Biomes.DESERT);
 
+            // ===== Extreme hot =====
             addBiome(mapper, EXTREME_HOT, INLAND, Climate.Parameter.span(-1.0f, 0.2f), Biomes.BADLANDS);
             addBiome(mapper, EXTREME_HOT, INLAND, Climate.Parameter.span(0.2f, 1.0f), Biomes.WOODED_BADLANDS);
             addBiome(mapper, EXTREME_HOT, HILLS, FULL_RANGE, Biomes.ERODED_BADLANDS);
             addOceanBiome(mapper, EXTREME_HOT, DEEP_OCEAN, Biomes.WARM_OCEAN);
             addOceanBiome(mapper, EXTREME_HOT, OCEAN, Biomes.WARM_OCEAN);
             addCoastBiome(mapper, EXTREME_HOT, Biomes.BADLANDS);
+        }
+
+        private void addRiverBiome(Consumer<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> mapper,
+                                   Climate.Parameter temperature,
+                                   ResourceKey<Biome> biome) {
+            mapper.accept(Pair.of(
+                    Climate.parameters(
+                            temperature,
+                            FULL_RANGE,
+                            RIVER_VALLEY,
+                            FULL_RANGE,
+                            Climate.Parameter.point(0.0f),
+                            FULL_RANGE,
+                            0.0f
+                    ),
+                    biome
+            ));
         }
 
         private void addBiome(Consumer<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> mapper,

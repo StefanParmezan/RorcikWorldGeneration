@@ -1,0 +1,7 @@
+{
+  "feature": "rwg:river_shore_smoothing",
+  "placement": [
+    { "type": "minecraft:count", "count": 1 },
+    { "type": "minecraft:in_square" }
+  ]
+}

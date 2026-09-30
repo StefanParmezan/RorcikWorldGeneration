@@ -129,8 +129,10 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
         if (state.is(Blocks.GRAVEL))
             return RwgBlocks.GRAVEL_SLAB.get().defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
 
-        if (state.is(Blocks.STONE) || state.is(Blocks.CALCITE))
+        if (state.is(Blocks.STONE))
             return Blocks.STONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
+        if(state.is(Blocks.CALCITE))
+            return Blocks.DIORITE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
         if (state.is(Blocks.COBBLESTONE))
             return Blocks.COBBLESTONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
         if (state.is(Blocks.MOSSY_COBBLESTONE))
