@@ -24,8 +24,9 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
     private static final Logger LOG = LogUtils.getLogger();
     private static boolean hasLoggedFirstCall = false;
 
-    private static final int SEARCH_ABOVE = 4;
-    private static final int SEARCH_BELOW = 4;
+    // Строго на уровне моря: [seaLevel - 1 … seaLevel] — уровень воды и поверхность берега.
+    private static final int SEARCH_ABOVE = 0;
+    private static final int SEARCH_BELOW = 1;
 
     private static final int[][] DIRECTIONS = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
 
@@ -99,6 +100,7 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
                 int x = chunkMinX + lx;
                 int z = chunkMinZ + lz;
 
+                // 1) Ищем верхний твёрдый блок суши СТРОГО на уровне моря
                 int landTopY = Integer.MIN_VALUE;
                 BlockState landState = null;
 
@@ -118,14 +120,19 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
 
                 if (landState == null) continue;
 
-                if (landTopY < seaLevel - 1 || landTopY > seaLevel + 2) continue;
+                // 2) Только seaLevel или seaLevel - 1
+                if (landTopY > seaLevel) continue;
+                if (landTopY < waterY) continue;
 
+                // 3) Только природный ландшафт
                 if (!NATURAL_TERRAIN.contains(landState.getBlock())) continue;
 
+                // 4) Сверху — только воздух или вода
                 BlockPos abovePos = new BlockPos(x, landTopY + 1, z);
                 BlockState above = level.getBlockState(abovePos);
                 if (!above.isAir() && above.getFluidState().isEmpty()) continue;
 
+                // 5) Рядом на уровне воды должна быть вода
                 boolean hasWaterNeighbor = false;
                 for (int[] dir : DIRECTIONS) {
                     BlockPos wp = new BlockPos(x + dir[0], waterY, z + dir[1]);
@@ -136,9 +143,11 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
                 }
                 if (!hasWaterNeighbor) continue;
 
+                // 6) Под верхним блоком суши не должно быть воды
                 BlockPos belowPos = new BlockPos(x, landTopY - 1, z);
                 if (level.getBlockState(belowPos).getFluidState().is(Fluids.WATER)) continue;
 
+                // 7) В позиции установки — полный блок, не плита
                 BlockPos slabPos = new BlockPos(x, landTopY, z);
                 BlockState atSlab = level.getBlockState(slabPos);
                 if (atSlab.getBlock() instanceof SlabBlock) continue;
@@ -147,6 +156,7 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
                 Block slab = getSlabFor(landState);
                 if (slab == null) continue;
 
+                // 8) Водалогируем только свою плиту и только если рядом вода на том же Y
                 boolean shouldWaterlog = false;
                 for (int[] dir : DIRECTIONS) {
                     BlockPos wp = new BlockPos(x + dir[0], landTopY, z + dir[1]);
@@ -179,58 +189,60 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
     private boolean isFullBlockForReplacement(BlockState state) {
         if (state.isAir()) return false;
         if (!state.getFluidState().isEmpty()) return false;
+        if (state.getBlock() instanceof SlabBlock) return false;
         return true;
     }
 
     private Block getSlabFor(BlockState state) {
-        if (state.is(Blocks.DIRT))            return RwgBlocks.DIRT_SLAB.get();
-        if (state.is(Blocks.GRASS_BLOCK))     return RwgBlocks.DIRT_SLAB.get();
-        if (state.is(Blocks.COARSE_DIRT))     return RwgBlocks.COARSE_DIRT_SLAB.get();
-        if (state.is(Blocks.PODZOL))          return RwgBlocks.DIRT_SLAB.get();
-        if (state.is(Blocks.MYCELIUM))        return RwgBlocks.PODZOL_SLAB.get();
-        if (state.is(Blocks.ROOTED_DIRT))     return RwgBlocks.DIRT_SLAB.get();
-        if (state.is(Blocks.MUD))             return RwgBlocks.DIRT_SLAB.get();
+        Block block = state.getBlock();
 
-        if (state.is(Blocks.SAND))            return RwgBlocks.SAND_SLAB.get();
-        if (state.is(Blocks.RED_SAND))        return RwgBlocks.RED_SAND_SLAB.get();
-        if (state.is(Blocks.SUSPICIOUS_SAND)) return RwgBlocks.SAND_SLAB.get();
-        if (state.is(Blocks.GRAVEL))          return RwgBlocks.GRAVEL_SLAB.get();
-        if (state.is(Blocks.SUSPICIOUS_GRAVEL)) return RwgBlocks.GRAVEL_SLAB.get();
-        if (state.is(Blocks.CLAY))            return RwgBlocks.GRAVEL_SLAB.get();
-        if (state.is(Blocks.SOUL_SAND))       return RwgBlocks.GRAVEL_SLAB.get();
-        if (state.is(Blocks.SOUL_SOIL))       return RwgBlocks.GRAVEL_SLAB.get();
+        if (block == Blocks.DIRT || block == Blocks.GRASS_BLOCK
+                || block == Blocks.PODZOL || block == Blocks.ROOTED_DIRT
+                || block == Blocks.MUD)
+            return RwgBlocks.DIRT_SLAB.get();
 
-        if (state.is(Blocks.STONE) || state.is(Blocks.CALCITE)) return Blocks.STONE_SLAB;
-        if (state.is(Blocks.COBBLESTONE))        return Blocks.COBBLESTONE_SLAB;
-        if (state.is(Blocks.MOSSY_COBBLESTONE))  return Blocks.MOSSY_COBBLESTONE_SLAB;
+        if (block == Blocks.COARSE_DIRT) return RwgBlocks.COARSE_DIRT_SLAB.get();
+        if (block == Blocks.MYCELIUM) return RwgBlocks.PODZOL_SLAB.get();
 
-        if (state.is(Blocks.GRANITE))            return Blocks.GRANITE_SLAB;
-        if (state.is(Blocks.DIORITE))            return Blocks.DIORITE_SLAB;
-        if (state.is(Blocks.ANDESITE))           return Blocks.ANDESITE_SLAB;
+        if (block == Blocks.SAND || block == Blocks.SUSPICIOUS_SAND)
+            return RwgBlocks.SAND_SLAB.get();
+        if (block == Blocks.RED_SAND) return RwgBlocks.RED_SAND_SLAB.get();
 
-        if (state.is(Blocks.DEEPSLATE))          return Blocks.COBBLED_DEEPSLATE_SLAB;
+        if (block == Blocks.GRAVEL || block == Blocks.SUSPICIOUS_GRAVEL
+                || block == Blocks.CLAY || block == Blocks.SOUL_SAND
+                || block == Blocks.SOUL_SOIL)
+            return RwgBlocks.GRAVEL_SLAB.get();
 
-        if (state.is(Blocks.BLACKSTONE))         return Blocks.BLACKSTONE_SLAB;
-        if (state.is(Blocks.BASALT) || state.is(Blocks.SMOOTH_BASALT))
+        if (block == Blocks.STONE || block == Blocks.CALCITE)
+            return Blocks.STONE_SLAB;
+
+        if (block == Blocks.COBBLESTONE) return Blocks.COBBLESTONE_SLAB;
+        if (block == Blocks.MOSSY_COBBLESTONE) return Blocks.MOSSY_COBBLESTONE_SLAB;
+
+        if (block == Blocks.GRANITE) return Blocks.GRANITE_SLAB;
+        if (block == Blocks.DIORITE) return Blocks.DIORITE_SLAB;
+        if (block == Blocks.ANDESITE) return Blocks.ANDESITE_SLAB;
+
+        if (block == Blocks.DEEPSLATE) return Blocks.COBBLED_DEEPSLATE_SLAB;
+
+        if (block == Blocks.BLACKSTONE) return Blocks.BLACKSTONE_SLAB;
+        if (block == Blocks.BASALT || block == Blocks.SMOOTH_BASALT)
             return Blocks.BLACKSTONE_SLAB;
 
-        if (state.is(Blocks.SANDSTONE))          return Blocks.SANDSTONE_SLAB;
-        if (state.is(Blocks.RED_SANDSTONE))      return Blocks.RED_SANDSTONE_SLAB;
+        if (block == Blocks.SANDSTONE) return Blocks.SANDSTONE_SLAB;
+        if (block == Blocks.RED_SANDSTONE) return Blocks.RED_SANDSTONE_SLAB;
 
-        if (state.is(Blocks.TERRACOTTA)
-                || state.is(Blocks.WHITE_TERRACOTTA)
-                || state.is(Blocks.ORANGE_TERRACOTTA)
-                || state.is(Blocks.RED_TERRACOTTA)
-                || state.is(Blocks.BROWN_TERRACOTTA)
-                || state.is(Blocks.YELLOW_TERRACOTTA)
-                || state.is(Blocks.LIGHT_GRAY_TERRACOTTA))
-            return Blocks.SMOOTH_STONE_SLAB;
+        if (block == Blocks.TERRACOTTA
+                || block == Blocks.WHITE_TERRACOTTA
+                || block == Blocks.ORANGE_TERRACOTTA
+                || block == Blocks.RED_TERRACOTTA
+                || block == Blocks.BROWN_TERRACOTTA
+                || block == Blocks.YELLOW_TERRACOTTA
+                || block == Blocks.LIGHT_GRAY_TERRACOTTA)
+            return RwgBlocks.RED_SAND_SLAB.get();
 
-        if (state.is(Blocks.NETHERRACK))         return Blocks.NETHER_BRICK_SLAB;
-        if (state.is(Blocks.END_STONE))          return Blocks.END_STONE_BRICK_SLAB;
-
-        if (state.is(Blocks.PRISMARINE))         return Blocks.PRISMARINE_SLAB;
-        if (state.is(Blocks.DARK_PRISMARINE))    return Blocks.DARK_PRISMARINE_SLAB;
+        if (block == Blocks.PRISMARINE) return Blocks.PRISMARINE_SLAB;
+        if (block == Blocks.DARK_PRISMARINE) return Blocks.DARK_PRISMARINE_SLAB;
 
         return null;
     }

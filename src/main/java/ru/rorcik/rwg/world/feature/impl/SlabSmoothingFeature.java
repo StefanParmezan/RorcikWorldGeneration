@@ -46,7 +46,13 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
                 BlockPos ground = groundPos[lx * 16 + lz];
                 if (ground == null) continue;
 
-                BlockState slabState = getSlabStateFor(level.getBlockState(ground));
+                BlockState groundState = level.getBlockState(ground);
+
+                // Waterlogged-плиты ставит RiverShoreSmoothingFeature.
+                // Они уже сглаживают берег — не трогаем их и не ставим поверх.
+                if (isWaterloggedSlab(groundState)) continue;
+
+                BlockState slabState = getSlabStateFor(groundState);
                 if (slabState == null) continue;
 
                 int currentY = ground.getY();
@@ -58,7 +64,13 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
                     if (nlx < 0 || nlx > 15 || nlz < 0 || nlz > 15) continue;
 
                     BlockPos nGround = groundPos[nlx * 16 + nlz];
-                    if (nGround == null || nGround.getY() != currentY + 1) continue;
+                    if (nGround == null) continue;
+
+                    // Сосед-waterlogged-плита не считается «ступенькой» —
+                    // она часть берега, а не перепад высоты.
+                    if (isWaterloggedSlab(level.getBlockState(nGround))) continue;
+
+                    if (nGround.getY() != currentY + 1) continue;
 
                     int olx = lx + opposite[i][0];
                     int olz = lz + opposite[i][1];
@@ -97,10 +109,18 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
 
         for (int i = 0; i < 6; i++) {
             BlockState s = level.getBlockState(pos);
+            // Waterlogged-плита → считаем её полноценной поверхностью колонки.
+            if (isWaterloggedSlab(s)) return pos.immutable();
             if (getSlabStateFor(s) != null) return pos.immutable();
             pos.move(0, -1, 0);
         }
         return null;
+    }
+
+    private boolean isWaterloggedSlab(BlockState state) {
+        if (!(state.getBlock() instanceof SlabBlock)) return false;
+        return state.hasProperty(SlabBlock.WATERLOGGED)
+                && state.getValue(SlabBlock.WATERLOGGED);
     }
 
     private boolean canReplaceAbove(WorldGenLevel level, BlockPos pos, BlockState state) {
@@ -131,7 +151,7 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
 
         if (state.is(Blocks.STONE))
             return Blocks.STONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if(state.is(Blocks.CALCITE))
+        if (state.is(Blocks.CALCITE))
             return Blocks.DIORITE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
         if (state.is(Blocks.COBBLESTONE))
             return Blocks.COBBLESTONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
