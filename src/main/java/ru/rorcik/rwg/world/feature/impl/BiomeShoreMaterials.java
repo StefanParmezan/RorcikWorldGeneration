@@ -27,16 +27,14 @@ final class BiomeShoreMaterials {
 
     static final ShoreMaterialConfig SANDY = ShoreMaterialConfig.builder()
             .add(Blocks.SAND,            55)
-            .add(Blocks.SUSPICIOUS_SAND, 14)
+            .add(Blocks.SUSPICIOUS_SAND, 15)
             .add(Blocks.SANDSTONE,       30)
-            .add(Blocks.CLAY,             1)
             .build();
 
     static final ShoreMaterialConfig RED_SANDY = ShoreMaterialConfig.builder()
             .add(Blocks.RED_SAND,        55)
-            .add(Blocks.RED_SANDSTONE,   24)
+            .add(Blocks.RED_SANDSTONE,   25)
             .add(Blocks.GRAVEL,          20)
-            .add(Blocks.CLAY,             1)
             .build();
 
     private BiomeShoreMaterials() {}

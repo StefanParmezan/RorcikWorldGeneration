@@ -12,6 +12,7 @@ import net.minecraft.world.level.block.DoublePlantBlock;
 import net.minecraft.world.level.block.PointedDripstoneBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.block.state.properties.DripstoneThickness;
 import net.minecraft.world.level.levelgen.feature.Feature;
@@ -37,13 +38,20 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
     private static final float DRIPSTONE_CHANCE      = 0.25f;
     private static final float DRY_GRASS_CHANCE      = 0.3f;
 
+    // ===== Shore decorations on MUD (EARTHY only) =====
     private static final float MUD_TALL_GRASS_P = 0.245f;
     private static final float MUD_GRASS_P      = 0.49f;
     private static final float MUD_FERN_P       = 0.735f;
     private static final float MUD_LARGE_FERN_P = 0.98f;
     private static final float MUD_PITCHER_P    = 0.99f;
 
+    // ===== Water surface decorations (EARTHY only) =====
+    private static final float WATER_LILY_PAD_P       = 0.05f;
+    private static final float WATER_SMALL_DRIPLEAF_P = 0.05f;
+    private static final float WATER_FROGSPAWN_P      = 0.005f;
+
     private static final int SHORE_RADIUS = 3;
+    private static final int WATER_RADIUS = 3;
 
     private enum PatchKind { EARTHY, STONE, SANDY, RED_SANDY }
 
@@ -64,10 +72,29 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
 
         PatchKind kind = pickPatchKind(level, surfacePos);
 
-        if (isNearWater(level, surfacePos)) {
-            return placeShorePatch(level, origin, random, kind);
+        int waterY = level.getSeaLevel() - 1;
+        boolean nearWater    = isNearWater(level, surfacePos);
+        boolean atWaterLevel = surfacePos.getY() >= waterY && surfacePos.getY() <= waterY + 2;
+
+        boolean placed = false;
+
+        if (nearWater && atWaterLevel) {
+            placed |= placeShorePatch(level, origin, random, kind);
+        } else {
+            placed |= placeSurfacePatch(level, origin, random, kind);
         }
 
+        if (nearWater && kind == PatchKind.EARTHY) {
+            placed |= decorateWaterSurface(level, origin, random);
+        }
+
+        return placed;
+    }
+
+    // ==================== NORMAL SURFACE PATCH ====================
+
+    private boolean placeSurfacePatch(WorldGenLevel level, BlockPos origin,
+                                      RandomSource random, PatchKind kind) {
         Block patchBlock = pickPatchBlock(kind, random);
 
         int radius = 1;
@@ -112,6 +139,8 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
 
         return placed > 0;
     }
+
+    // ==================== SHORE MODE ====================
 
     private boolean placeShorePatch(WorldGenLevel level, BlockPos origin,
                                     RandomSource random, PatchKind kind) {
@@ -173,11 +202,6 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
             return;
         }
 
-        if (isStoneTypeBlock(chosen)) {
-            placeDoublePlant(level, pos, Blocks.TALL_GRASS);
-            return;
-        }
-
         if (allowDryGrass
                 && (chosen == Blocks.SAND
                 || chosen == Blocks.RED_SAND
@@ -199,28 +223,106 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
 
         float roll = random.nextFloat();
 
-        if (roll < MUD_TALL_GRASS_P) {
-            placeDoublePlant(level, pos, Blocks.TALL_GRASS);
-            return;
-        }
-        if (roll < MUD_GRASS_P) {
-            level.setBlock(lower, Blocks.GRASS.defaultBlockState(), 3);
-            return;
-        }
-        if (roll < MUD_FERN_P) {
-            level.setBlock(lower, Blocks.FERN.defaultBlockState(), 3);
-            return;
-        }
-        if (roll < MUD_LARGE_FERN_P) {
-            placeDoublePlant(level, pos, Blocks.LARGE_FERN);
-            return;
-        }
-        if (roll < MUD_PITCHER_P) {
-            placeDoublePlant(level, pos, Blocks.PITCHER_PLANT);
-            return;
-        }
+        if (roll < MUD_TALL_GRASS_P)  { placeDoublePlant(level, pos, Blocks.TALL_GRASS); return; }
+        if (roll < MUD_GRASS_P)       { level.setBlock(lower, Blocks.GRASS.defaultBlockState(), 3); return; }
+        if (roll < MUD_FERN_P)        { level.setBlock(lower, Blocks.FERN.defaultBlockState(), 3); return; }
+        if (roll < MUD_LARGE_FERN_P)  { placeDoublePlant(level, pos, Blocks.LARGE_FERN); return; }
+        if (roll < MUD_PITCHER_P)     { placeDoublePlant(level, pos, Blocks.PITCHER_PLANT); return; }
         level.setBlock(lower, Blocks.TORCHFLOWER.defaultBlockState(), 3);
     }
+
+    // ==================== WATER SURFACE DECORATIONS ====================
+
+    private boolean decorateWaterSurface(WorldGenLevel level, BlockPos origin, RandomSource random) {
+        int waterY = level.getSeaLevel() - 1;
+        int radius = WATER_RADIUS;
+        int placed = 0;
+
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dz = -radius; dz <= radius; dz++) {
+                if (dx * dx + dz * dz > radius * radius) continue;
+
+                int x = origin.getX() + dx;
+                int z = origin.getZ() + dz;
+
+                BlockPos waterPos = new BlockPos(x, waterY, z);
+                BlockState waterState = level.getBlockState(waterPos);
+                if (!waterState.getFluidState().is(Fluids.WATER)) continue;
+
+                BlockPos abovePos = waterPos.above();
+                if (!level.getBlockState(abovePos).isAir()) continue;
+
+                float roll = random.nextFloat();
+
+                if (roll < WATER_LILY_PAD_P) {
+                    if (tryPlaceLilyPad(level, waterPos, abovePos)) placed++;
+                } else if (roll < WATER_LILY_PAD_P + WATER_SMALL_DRIPLEAF_P) {
+                    if (tryPlaceSmallDripleaf(level, waterPos, abovePos)) placed++;
+                } else if (roll < WATER_LILY_PAD_P + WATER_SMALL_DRIPLEAF_P + WATER_FROGSPAWN_P) {
+                    if (tryPlaceFrogspawn(level, waterPos, abovePos)) placed++;
+                }
+            }
+        }
+        return placed > 0;
+    }
+
+    private boolean tryPlaceFrogspawn(WorldGenLevel level, BlockPos waterPos, BlockPos abovePos) {
+        BlockState water = level.getBlockState(waterPos);
+        if (!water.getFluidState().is(Fluids.WATER)) return false;
+        if (!water.getFluidState().isSource()) return false;
+        if (!level.getBlockState(abovePos).isAir()) return false;
+
+        level.setBlock(abovePos, Blocks.FROGSPAWN.defaultBlockState(), 3);
+        return true;
+    }
+
+    private boolean tryPlaceLilyPad(WorldGenLevel level, BlockPos waterPos, BlockPos abovePos) {
+        BlockState water = level.getBlockState(waterPos);
+        if (!water.getFluidState().is(Fluids.WATER)) return false;
+        if (!water.getFluidState().isSource()) return false;
+        if (!level.getBlockState(abovePos).isAir()) return false;
+
+        level.setBlock(abovePos, Blocks.LILY_PAD.defaultBlockState(), 3);
+        return true;
+    }
+
+    private boolean tryPlaceSmallDripleaf(WorldGenLevel level, BlockPos waterPos, BlockPos abovePos) {
+        BlockPos groundPos = waterPos.below();
+        BlockState ground = level.getBlockState(groundPos);
+        if (ground.isAir()) return false;
+        if (!ground.getFluidState().isEmpty()) return false;
+        if (ground.getBlock() instanceof SlabBlock) return false;
+        if (!isDripleafSubstrate(ground)) return false;
+
+        if (!level.getBlockState(abovePos).isAir()) return false;
+
+        BlockState lower = Blocks.SMALL_DRIPLEAF.defaultBlockState()
+                .setValue(DoublePlantBlock.HALF, DoubleBlockHalf.LOWER)
+                .setValue(BlockStateProperties.WATERLOGGED, true);
+        level.setBlock(waterPos, lower, 3);
+
+        BlockState upper = Blocks.SMALL_DRIPLEAF.defaultBlockState()
+                .setValue(DoublePlantBlock.HALF, DoubleBlockHalf.UPPER)
+                .setValue(BlockStateProperties.WATERLOGGED, false);
+        level.setBlock(abovePos, upper, 3);
+
+        return true;
+    }
+
+    private boolean isDripleafSubstrate(BlockState s) {
+        return s.is(Blocks.CLAY)
+                || s.is(Blocks.DIRT)
+                || s.is(Blocks.COARSE_DIRT)
+                || s.is(Blocks.GRASS_BLOCK)
+                || s.is(Blocks.FARMLAND)
+                || s.is(Blocks.MOSS_BLOCK)
+                || s.is(Blocks.MUD)
+                || s.is(Blocks.MUDDY_MANGROVE_ROOTS)
+                || s.is(Blocks.PODZOL)
+                || s.is(Blocks.ROOTED_DIRT);
+    }
+
+    // ==================== HELPERS ====================
 
     private void placeDoublePlant(WorldGenLevel level, BlockPos below, Block plant) {
         BlockPos lower = below.above();
@@ -248,21 +350,6 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
                 .setValue(DoublePlantBlock.HALF, DoubleBlockHalf.LOWER), 3);
         level.setBlock(upper, plant.defaultBlockState()
                 .setValue(DoublePlantBlock.HALF, DoubleBlockHalf.UPPER), 3);
-    }
-
-    private boolean isStoneTypeBlock(Block block) {
-        return block == Blocks.STONE
-                || block == Blocks.COBBLESTONE
-                || block == Blocks.MOSSY_COBBLESTONE
-                || block == Blocks.ANDESITE
-                || block == Blocks.DIORITE
-                || block == Blocks.GRANITE
-                || block == Blocks.TUFF
-                || block == Blocks.DEEPSLATE
-                || block == Blocks.CALCITE
-                || block == Blocks.BLACKSTONE
-                || block == Blocks.BASALT
-                || block == Blocks.SMOOTH_BASALT;
     }
 
     private BlockPos findShoreSurface(WorldGenLevel level, int x, int z, int waterY) {
@@ -313,6 +400,59 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
         return false;
     }
 
+    // ==================== BIOME / KIND ====================
+
+    private PatchKind pickPatchKind(WorldGenLevel level, BlockPos pos) {
+        String name = biomeNameAt(level, pos);
+        PatchKind direct = kindFromBiomeName(name);
+        if (direct != null) return direct;
+
+        PatchKind neighbor = findNeighborLandKind(level, pos);
+        return neighbor != null ? neighbor : PatchKind.EARTHY;
+    }
+
+    private String biomeNameAt(WorldGenLevel level, BlockPos pos) {
+        return level.getBiome(pos).unwrapKey()
+                .map(k -> k.location().toString())
+                .orElse("");
+    }
+
+    private PatchKind kindFromBiomeName(String name) {
+        if (name.isEmpty()) return null;
+        if (name.contains("badlands")) return PatchKind.RED_SANDY;
+        if (name.equals("minecraft:desert") || name.equals("minecraft:beach")) return PatchKind.SANDY;
+        if (name.equals("minecraft:river") || name.equals("minecraft:frozen_river")) return null;
+        if (name.contains("ocean")) return null;
+        if (isMountainBiome(name)) return PatchKind.STONE;
+        return PatchKind.EARTHY;
+    }
+
+    private PatchKind findNeighborLandKind(WorldGenLevel level, BlockPos pos) {
+        for (int r = 8; r <= 32; r += 8) {
+            for (int dx = -r; dx <= r; dx += 8) {
+                for (int dz = -r; dz <= r; dz += 8) {
+                    if (Math.abs(dx) != r && Math.abs(dz) != r) continue;
+                    String name = biomeNameAt(level, pos.offset(dx, 0, dz));
+                    PatchKind k = kindFromBiomeName(name);
+                    if (k != null) return k;
+                }
+            }
+        }
+        return null;
+    }
+
+    private boolean isMountainBiome(String name) {
+        return name.contains("stony")
+                || name.contains("jagged_peaks")
+                || name.contains("frozen_peaks")
+                || name.contains("snowy_slopes")
+                || name.contains("grove")
+                || name.contains("peaks")
+                || name.contains("slopes")
+                || name.contains("cliffs");
+    }
+
+    // ==================== DECORATIONS ====================
 
     private void decorateSandy(WorldGenLevel level, BlockPos abovePos,
                                Block patchBlock, RandomSource random) {
@@ -382,30 +522,6 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
                 || s.is(Blocks.SMOOTH_SANDSTONE)
                 || s.is(Blocks.RED_SANDSTONE)
                 || s.is(Blocks.SMOOTH_RED_SANDSTONE);
-    }
-
-    private PatchKind pickPatchKind(WorldGenLevel level, BlockPos pos) {
-        String name = level.getBiome(pos).unwrapKey()
-                .map(k -> k.location().toString())
-                .orElse("");
-
-        if (name.contains("badlands")) return PatchKind.RED_SANDY;
-        if (name.equals("minecraft:desert") || name.equals("minecraft:beach")) {
-            return PatchKind.SANDY;
-        }
-        if (isMountainBiome(name)) return PatchKind.STONE;
-        return PatchKind.EARTHY;
-    }
-
-    private boolean isMountainBiome(String name) {
-        return name.contains("stony")
-                || name.contains("jagged_peaks")
-                || name.contains("frozen_peaks")
-                || name.contains("snowy_slopes")
-                || name.contains("grove")
-                || name.contains("peaks")
-                || name.contains("slopes")
-                || name.contains("cliffs");
     }
 
     private void placeFern(WorldGenLevel level, BlockPos lowerPos, RandomSource random) {
