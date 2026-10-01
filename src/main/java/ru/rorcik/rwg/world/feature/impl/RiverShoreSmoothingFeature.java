@@ -24,7 +24,6 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
     private static final Logger LOG = LogUtils.getLogger();
     private static boolean hasLoggedFirstCall = false;
 
-    // Строго на уровне моря: [seaLevel - 1 … seaLevel] — уровень воды и поверхность берега.
     private static final int SEARCH_ABOVE = 0;
     private static final int SEARCH_BELOW = 1;
 
@@ -100,7 +99,6 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
                 int x = chunkMinX + lx;
                 int z = chunkMinZ + lz;
 
-                // 1) Ищем верхний твёрдый блок суши СТРОГО на уровне моря
                 int landTopY = Integer.MIN_VALUE;
                 BlockState landState = null;
 
@@ -120,19 +118,15 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
 
                 if (landState == null) continue;
 
-                // 2) Только seaLevel или seaLevel - 1
                 if (landTopY > seaLevel) continue;
                 if (landTopY < waterY) continue;
 
-                // 3) Только природный ландшафт
                 if (!NATURAL_TERRAIN.contains(landState.getBlock())) continue;
 
-                // 4) Сверху — только воздух или вода
                 BlockPos abovePos = new BlockPos(x, landTopY + 1, z);
                 BlockState above = level.getBlockState(abovePos);
                 if (!above.isAir() && above.getFluidState().isEmpty()) continue;
 
-                // 5) Рядом на уровне воды должна быть вода
                 boolean hasWaterNeighbor = false;
                 for (int[] dir : DIRECTIONS) {
                     BlockPos wp = new BlockPos(x + dir[0], waterY, z + dir[1]);
@@ -143,11 +137,9 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
                 }
                 if (!hasWaterNeighbor) continue;
 
-                // 6) Под верхним блоком суши не должно быть воды
                 BlockPos belowPos = new BlockPos(x, landTopY - 1, z);
                 if (level.getBlockState(belowPos).getFluidState().is(Fluids.WATER)) continue;
 
-                // 7) В позиции установки — полный блок, не плита
                 BlockPos slabPos = new BlockPos(x, landTopY, z);
                 BlockState atSlab = level.getBlockState(slabPos);
                 if (atSlab.getBlock() instanceof SlabBlock) continue;
@@ -156,7 +148,6 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
                 Block slab = getSlabFor(landState);
                 if (slab == null) continue;
 
-                // 8) Водалогируем только свою плиту и только если рядом вода на том же Y
                 boolean shouldWaterlog = false;
                 for (int[] dir : DIRECTIONS) {
                     BlockPos wp = new BlockPos(x + dir[0], landTopY, z + dir[1]);
@@ -196,11 +187,12 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
     private Block getSlabFor(BlockState state) {
         Block block = state.getBlock();
 
-        if (block == Blocks.DIRT || block == Blocks.GRASS_BLOCK
+        if (block == Blocks.DIRT
                 || block == Blocks.PODZOL || block == Blocks.ROOTED_DIRT
                 || block == Blocks.MUD)
             return RwgBlocks.DIRT_SLAB.get();
 
+        if (block == Blocks.GRASS_BLOCK) return RwgBlocks.GRASS_SLAB.get();
         if (block == Blocks.COARSE_DIRT) return RwgBlocks.COARSE_DIRT_SLAB.get();
         if (block == Blocks.MYCELIUM) return RwgBlocks.PODZOL_SLAB.get();
 

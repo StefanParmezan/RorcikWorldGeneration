@@ -9,6 +9,7 @@ import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DoublePlantBlock;
+import net.minecraft.world.level.block.FrogspawnBlock;
 import net.minecraft.world.level.block.PointedDripstoneBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -46,8 +47,8 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
     private static final float MUD_PITCHER_P    = 0.99f;
 
     // ===== Water surface decorations (EARTHY only) =====
-    private static final float WATER_LILY_PAD_P       = 0.05f;
-    private static final float WATER_SMALL_DRIPLEAF_P = 0.05f;
+    private static final float WATER_LILY_PAD_P       = 0.1f;
+    private static final float WATER_SMALL_DRIPLEAF_P = 0.1f;
     private static final float WATER_FROGSPAWN_P      = 0.005f;
 
     private static final int SHORE_RADIUS = 3;
@@ -259,20 +260,38 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
                 } else if (roll < WATER_LILY_PAD_P + WATER_SMALL_DRIPLEAF_P) {
                     if (tryPlaceSmallDripleaf(level, waterPos, abovePos)) placed++;
                 } else if (roll < WATER_LILY_PAD_P + WATER_SMALL_DRIPLEAF_P + WATER_FROGSPAWN_P) {
-                    if (tryPlaceFrogspawn(level, waterPos, abovePos)) placed++;
+                    if (tryPlaceFrogspawn(level, waterPos, abovePos, random)) placed++;
                 }
             }
         }
         return placed > 0;
     }
 
-    private boolean tryPlaceFrogspawn(WorldGenLevel level, BlockPos waterPos, BlockPos abovePos) {
+    /**
+     * Икра лягушки. С шансом frogspawnInstantChance ставится с AGE 3–4,
+     * чтобы почти сразу вылупиться (AGE=4 — следующий tick, AGE=3 — через
+     * один промежуточный).
+     */
+    /**
+     * Икра лягушки. С шансом frogspawnInstantChance планируем дополнительный
+     * короткий тик (1–10 секунд), чтобы икра вылупилась почти сразу.
+     * Оригинальный длинный тик (3600–12000) остаётся в очереди, но сработает
+     * уже по пустому блоку и просто ничего не сделает.
+     */
+    private boolean tryPlaceFrogspawn(WorldGenLevel level, BlockPos waterPos,
+                                      BlockPos abovePos, RandomSource random) {
         BlockState water = level.getBlockState(waterPos);
         if (!water.getFluidState().is(Fluids.WATER)) return false;
         if (!water.getFluidState().isSource()) return false;
         if (!level.getBlockState(abovePos).isAir()) return false;
 
         level.setBlock(abovePos, Blocks.FROGSPAWN.defaultBlockState(), 3);
+
+        if (RwgConfig.frogspawnInstantChance > 0.0
+                && random.nextFloat() < RwgConfig.frogspawnInstantChance) {
+            int shortDelay = 20 + random.nextInt(180); // 1-10 сек при 20 tps
+            level.scheduleTick(abovePos, Blocks.FROGSPAWN, shortDelay);
+        }
         return true;
     }
 

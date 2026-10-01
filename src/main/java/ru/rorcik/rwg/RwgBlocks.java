@@ -143,16 +143,16 @@ public class RwgBlocks {
     public static final RegistryObject<Item> QUARTZ_CLUSTER_ITEM = ITEMS.register("quartz_cluster",
             () -> new BlockItem(QUARTZ_CLUSTER.get(), new Item.Properties()));
 
-    public static final RegistryObject<Block> BUDDING_DIORITE = BLOCKS.register("budding_diorite",
-            () -> new BuddingDioriteBlock(BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.QUARTZ)
-                    .strength(1.5F, 6.0F)
-                    .sound(SoundType.CALCITE)
-                    .randomTicks()
-                    .requiresCorrectToolForDrops()));
+        public static final RegistryObject<Block> BUDDING_DIORITE = BLOCKS.register("budding_diorite",
+                () -> new BuddingDioriteBlock(BlockBehaviour.Properties.of()
+                        .mapColor(MapColor.QUARTZ)
+                        .strength(1.5F, 6.0F)
+                        .sound(SoundType.CALCITE)
+                        .randomTicks()
+                        .requiresCorrectToolForDrops()));
 
-    public static final RegistryObject<Item> BUDDING_DIORITE_ITEM = ITEMS.register("budding_diorite",
-            () -> new BlockItem(BUDDING_DIORITE.get(), new Item.Properties()));
+        public static final RegistryObject<Item> BUDDING_DIORITE_ITEM = ITEMS.register("budding_diorite",
+                () -> new BlockItem(BUDDING_DIORITE.get(), new Item.Properties()));
 
     public static final RegistryObject<Block> DRY_GRASS = BLOCKS.register("dry_grass",
             () -> new DryGrassBlock(BlockBehaviour.Properties.of()

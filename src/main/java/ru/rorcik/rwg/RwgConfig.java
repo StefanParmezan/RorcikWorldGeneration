@@ -56,7 +56,7 @@ public class RwgConfig {
     public static final ForgeConfigSpec.BooleanValue ENABLE_DEAD_BUSH_ON_PODZOL;
     public static final ForgeConfigSpec.BooleanValue ENABLE_FERN_ON_COARSE_DIRT;
     public static final ForgeConfigSpec.BooleanValue ENABLE_MOSS_ON_MOSSY_COBBLESTONE;
-
+    public static final ForgeConfigSpec.DoubleValue FROGSPAWN_INSTANT_CHANCE;
 
     public static final ForgeConfigSpec.BooleanValue SUPPRESS_DENSITY_WARNINGS;
 
@@ -134,6 +134,14 @@ public class RwgConfig {
                 .comment("Allow moss carpet to appear on mossy cobblestone patches")
                 .define("enable_moss_on_mossy_cobblestone", true);
 
+        FROGSPAWN_INSTANT_CHANCE = BUILDER
+                .comment(
+                        "Chance (0.0 - 1.0) that a newly placed frogspawn will start",
+                        "near hatching (AGE 3-4 instead of 0).",
+                        "0.0 disables this — frogspawn always starts at AGE 0."
+                )
+                .defineInRange("frogspawn_instant_chance", 0.15, 0.0, 1.0);
+
         BUILDER.pop();
 
         BUILDER.pop();
@@ -145,7 +153,6 @@ public class RwgConfig {
     public static List<? extends String> physicsAffectedBlocks;
     public static double highwaySpawnChance;
     public static boolean applyJoinWorldSpawnMixin;
-
 
     public static boolean enableEarthyPatchDecorations;
     public static boolean enableDeadBushOnPodzol;
@@ -161,6 +168,8 @@ public class RwgConfig {
     public static int caveMaxY;
     public static boolean smoothCaveWalls;
     public static boolean exposeCavesInMountains;
+
+    public static double frogspawnInstantChance;
 
     public static boolean suppressDensityWarnings;
 
@@ -186,6 +195,8 @@ public class RwgConfig {
         enableDeadBushOnPodzol          = ENABLE_DEAD_BUSH_ON_PODZOL.get();
         enableFernOnCoarseDirt          = ENABLE_FERN_ON_COARSE_DIRT.get();
         enableMossOnMossyCobblestone    = ENABLE_MOSS_ON_MOSSY_COBBLESTONE.get();
+        frogspawnInstantChance          = FROGSPAWN_INSTANT_CHANCE.get();
+
         suppressDensityWarnings = SUPPRESS_DENSITY_WARNINGS.get();
     }
 }
