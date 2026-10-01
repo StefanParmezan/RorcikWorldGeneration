@@ -2,11 +2,9 @@ package ru.rorcik.rwg.world.feature.impl;
 
 import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
-import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SlabBlock;
@@ -18,12 +16,55 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
 import ru.rorcik.rwg.world.feature.util.SurfaceFinder;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
 
-    private static final float ORE_CHANCE = 0.02f;
+    private static final float ORE_CHANCE    = 0.02f;
     private static final float GILDED_CHANCE = 0.03f;
+
+    private static final Set<String> COLD_BIOMES = Set.of(
+            "minecraft:snowy_plains",
+            "minecraft:snowy_taiga",
+            "minecraft:snowy_beach",
+            "minecraft:ice_spikes",
+            "minecraft:frozen_river",
+            "minecraft:frozen_ocean",
+            "minecraft:deep_frozen_ocean",
+            "minecraft:snowy_slopes",
+            "minecraft:jagged_peaks",
+            "minecraft:frozen_peaks",
+            "minecraft:grove"
+    );
+
+    private static final Set<Block> BOULDER_BLOCKS = Set.of(
+            Blocks.STONE, Blocks.ANDESITE, Blocks.TUFF, Blocks.GRANITE,
+            Blocks.MOSSY_COBBLESTONE, Blocks.COBBLESTONE,
+            Blocks.BLACKSTONE, Blocks.GILDED_BLACKSTONE,
+            Blocks.DEEPSLATE, Blocks.CALCITE,
+            Blocks.COPPER_ORE, Blocks.COAL_ORE,
+            Blocks.DEEPSLATE_COPPER_ORE, Blocks.DEEPSLATE_COAL_ORE,
+            Blocks.SANDSTONE, Blocks.SMOOTH_SANDSTONE, Blocks.CUT_SANDSTONE,
+            Blocks.RED_SANDSTONE, Blocks.SMOOTH_RED_SANDSTONE, Blocks.CUT_RED_SANDSTONE,
+            Blocks.PACKED_ICE, Blocks.BLUE_ICE, Blocks.ICE,
+            Blocks.SNOW_BLOCK, Blocks.POWDER_SNOW
+    );
+
+    private static final Map<BoulderType, Block> CAP_SLAB = buildCapSlabMap();
+
+    private static Map<BoulderType, Block> buildCapSlabMap() {
+        Map<BoulderType, Block> m = new HashMap<>();
+        m.put(BoulderType.STONE, Blocks.STONE_SLAB);
+        m.put(BoulderType.BLACKSTONE, Blocks.BLACKSTONE_SLAB);
+        m.put(BoulderType.DEEPSLATE, Blocks.COBBLED_DEEPSLATE_SLAB);
+        m.put(BoulderType.CALCITE, Blocks.STONE_SLAB);
+        m.put(BoulderType.SANDSTONE, Blocks.SANDSTONE_SLAB);
+        m.put(BoulderType.RED_SANDSTONE, Blocks.RED_SANDSTONE_SLAB);
+        return m;
+    }
 
     public BoulderFeature(Codec<NoneFeatureConfiguration> codec) {
         super(codec);
@@ -57,21 +98,17 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     private BoulderType pickBoulderTypeByBiome(WorldGenLevel level, BlockPos pos, RandomSource random) {
-        Holder<Biome> biomeHolder = level.getBiome(pos);
-        String biomeName = biomeHolder.unwrapKey()
+        String name = level.getBiome(pos).unwrapKey()
                 .map(k -> k.location().toString())
                 .orElse("");
 
-        if (biomeName.equals("minecraft:desert")
-                || biomeName.equals("minecraft:beach")) {
+        if (name.equals("minecraft:desert") || name.equals("minecraft:beach")) {
             return BoulderType.SANDSTONE;
         }
-
-        if (biomeName.contains("badlands")) {
+        if (name.contains("badlands")) {
             return BoulderType.RED_SANDSTONE;
         }
-
-        if (isColdBiome(biomeName)) {
+        if (COLD_BIOMES.contains(name)) {
             return random.nextBoolean() ? BoulderType.ICE : BoulderType.SNOW;
         }
 
@@ -80,20 +117,6 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
         if (roll < 75) return BoulderType.DEEPSLATE;
         if (roll < 88) return BoulderType.CALCITE;
         return BoulderType.BLACKSTONE;
-    }
-
-    private boolean isColdBiome(String name) {
-        return name.equals("minecraft:snowy_plains")
-                || name.equals("minecraft:snowy_taiga")
-                || name.equals("minecraft:snowy_beach")
-                || name.equals("minecraft:ice_spikes")
-                || name.equals("minecraft:frozen_river")
-                || name.equals("minecraft:frozen_ocean")
-                || name.equals("minecraft:deep_frozen_ocean")
-                || name.equals("minecraft:snowy_slopes")
-                || name.equals("minecraft:jagged_peaks")
-                || name.equals("minecraft:frozen_peaks")
-                || name.equals("minecraft:grove");
     }
 
     private List<BlockPos> placeBoulder(WorldGenLevel level, BlockPos center,
@@ -198,7 +221,7 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
         BlockPos above = highest.above();
         if (!level.getBlockState(above).isAir()) return;
 
-        Block slabBlock = getSlabForType(type);
+        Block slabBlock = CAP_SLAB.get(type);
         if (slabBlock != null) {
             level.setBlock(above, slabBlock.defaultBlockState()
                     .setValue(SlabBlock.TYPE, SlabType.BOTTOM), 3);
@@ -207,20 +230,8 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
         }
     }
 
-    private Block getSlabForType(BoulderType type) {
-        return switch (type) {
-            case STONE -> Blocks.STONE_SLAB;
-            case BLACKSTONE -> Blocks.BLACKSTONE_SLAB;
-            case DEEPSLATE -> Blocks.COBBLED_DEEPSLATE_SLAB;
-            case CALCITE -> Blocks.STONE_SLAB;
-            case SANDSTONE -> Blocks.SANDSTONE_SLAB;
-            case RED_SANDSTONE -> Blocks.RED_SANDSTONE_SLAB;
-            case ICE, SNOW -> null;
-        };
-    }
-
     private void smoothBase(WorldGenLevel level, BlockPos center, int radius, BoulderType type) {
-        Block slabBlock = getSlabForType(type);
+        Block slabBlock = CAP_SLAB.get(type);
         if (slabBlock == null) return;
 
         int searchR = radius + 2;
@@ -232,7 +243,7 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
                 BlockPos surfacePos = SurfaceFinder.findSurface(level, x, z);
                 BlockState surfaceState = level.getBlockState(surfacePos);
 
-                if (isBoulderBlock(surfaceState)) continue;
+                if (BOULDER_BLOCKS.contains(surfaceState.getBlock())) continue;
                 if (!surfaceState.isSolid()) continue;
 
                 boolean neighborHigher = false;
@@ -241,7 +252,8 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
                     int nz = z + dir[1];
                     BlockPos nSurface = SurfaceFinder.findSurface(level, nx, nz);
                     BlockState nState = level.getBlockState(nSurface);
-                    if (isBoulderBlock(nState) && nSurface.getY() == surfacePos.getY() + 1) {
+                    if (BOULDER_BLOCKS.contains(nState.getBlock())
+                            && nSurface.getY() == surfacePos.getY() + 1) {
                         neighborHigher = true;
                         break;
                     }
@@ -255,23 +267,6 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
                         .setValue(SlabBlock.TYPE, SlabType.BOTTOM), 3);
             }
         }
-    }
-
-    private boolean isBoulderBlock(BlockState state) {
-        return state.is(Blocks.STONE) || state.is(Blocks.ANDESITE)
-                || state.is(Blocks.TUFF) || state.is(Blocks.GRANITE)
-                || state.is(Blocks.MOSSY_COBBLESTONE) || state.is(Blocks.COBBLESTONE)
-                || state.is(Blocks.BLACKSTONE) || state.is(Blocks.GILDED_BLACKSTONE)
-                || state.is(Blocks.DEEPSLATE) || state.is(Blocks.CALCITE)
-                || state.is(Blocks.COPPER_ORE) || state.is(Blocks.COAL_ORE)
-                || state.is(Blocks.DEEPSLATE_COPPER_ORE) || state.is(Blocks.DEEPSLATE_COAL_ORE)
-                || state.is(Blocks.SANDSTONE) || state.is(Blocks.SMOOTH_SANDSTONE)
-                || state.is(Blocks.CUT_SANDSTONE)
-                || state.is(Blocks.RED_SANDSTONE) || state.is(Blocks.SMOOTH_RED_SANDSTONE)
-                || state.is(Blocks.CUT_RED_SANDSTONE)
-                || state.is(Blocks.PACKED_ICE) || state.is(Blocks.BLUE_ICE)
-                || state.is(Blocks.ICE)
-                || state.is(Blocks.SNOW_BLOCK) || state.is(Blocks.POWDER_SNOW);
     }
 
     private boolean canBoulderOverride(BlockState state, int dy) {

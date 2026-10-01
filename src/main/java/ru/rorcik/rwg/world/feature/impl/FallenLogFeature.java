@@ -1,6 +1,5 @@
 package ru.rorcik.rwg.world.feature.impl;
 
-import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -15,21 +14,41 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
-import org.slf4j.Logger;
 import ru.rorcik.rwg.world.feature.util.SurfaceFinder;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
-    private static final Logger LOGGER = LogUtils.getLogger();
-    private static boolean hasLogged = false;
 
-    private static final float SPAWN_CHANCE                 = 0.35f;
-    private static final float STRIPPED_PER_BLOCK_CHANCE    = 0.25f;
-    private static final float LEAF_CAP_CHANCE              = 0.20f;
-    private static final float MUSHROOM_ON_LOG_CHANCE       = 0.35f;
-    private static final float MUSHROOM_ON_GROUND_CHANCE    = 0.35f;
+    private static final float SPAWN_CHANCE              = 0.35f;
+    private static final float STRIPPED_PER_BLOCK_CHANCE = 0.25f;
+    private static final float LEAF_CAP_CHANCE           = 0.20f;
+    private static final float MUSHROOM_ON_LOG_CHANCE    = 0.35f;
+    private static final float MUSHROOM_ON_GROUND_CHANCE = 0.35f;
+
+    private static final Map<Block, Block> STRIPPED = new HashMap<>();
+    private static final Map<Block, Block> LEAVES   = new HashMap<>();
+
+    static {
+        STRIPPED.put(Blocks.OAK_LOG,      Blocks.STRIPPED_OAK_LOG);
+        STRIPPED.put(Blocks.SPRUCE_LOG,   Blocks.STRIPPED_SPRUCE_LOG);
+        STRIPPED.put(Blocks.BIRCH_LOG,    Blocks.STRIPPED_BIRCH_LOG);
+        STRIPPED.put(Blocks.DARK_OAK_LOG, Blocks.STRIPPED_DARK_OAK_LOG);
+        STRIPPED.put(Blocks.JUNGLE_LOG,   Blocks.STRIPPED_JUNGLE_LOG);
+        STRIPPED.put(Blocks.ACACIA_LOG,   Blocks.STRIPPED_ACACIA_LOG);
+        STRIPPED.put(Blocks.CHERRY_LOG,   Blocks.STRIPPED_CHERRY_LOG);
+
+        LEAVES.put(Blocks.OAK_LOG,      Blocks.OAK_LEAVES);
+        LEAVES.put(Blocks.SPRUCE_LOG,   Blocks.SPRUCE_LEAVES);
+        LEAVES.put(Blocks.BIRCH_LOG,    Blocks.BIRCH_LEAVES);
+        LEAVES.put(Blocks.DARK_OAK_LOG, Blocks.DARK_OAK_LEAVES);
+        LEAVES.put(Blocks.JUNGLE_LOG,   Blocks.JUNGLE_LEAVES);
+        LEAVES.put(Blocks.ACACIA_LOG,   Blocks.ACACIA_LEAVES);
+        LEAVES.put(Blocks.CHERRY_LOG,   Blocks.CHERRY_LEAVES);
+    }
 
     public FallenLogFeature(Codec<NoneFeatureConfiguration> codec) {
         super(codec);
@@ -41,19 +60,10 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
         BlockPos origin = context.origin();
         RandomSource random = context.random();
 
-        if (!hasLogged) {
-            LOGGER.info("[RWG] FallenLogFeature called at {}", origin);
-            hasLogged = true;
-        }
-
-        if (random.nextFloat() >= SPAWN_CHANCE) {
-            return false;
-        }
+        if (random.nextFloat() >= SPAWN_CHANCE) return false;
 
         BlockPos surfacePos = SurfaceFinder.findSurface(level, origin.getX(), origin.getZ());
-        if (!SurfaceFinder.isSolidGround(level, surfacePos)) {
-            return false;
-        }
+        if (!SurfaceFinder.isSolidGround(level, surfacePos)) return false;
 
         Block baseLog = pickLogTypeByBiome(level, surfacePos, random);
         int length = 3 + random.nextInt(3);
@@ -68,17 +78,12 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
             BlockPos pos = surfacePos.offset(dx, 1, dz);
 
             BlockState existing = level.getBlockState(pos);
-            if (!canLogOverride(level, pos, existing)) {
-                continue;
-            }
+            if (!canLogOverride(level, pos, existing)) continue;
 
-            BlockState below = level.getBlockState(pos.below());
-            if (!below.isSolid()) {
-                continue;
-            }
+            if (!level.getBlockState(pos.below()).isSolid()) continue;
 
             Block logVariant = (random.nextFloat() < STRIPPED_PER_BLOCK_CHANCE)
-                    ? getStrippedLog(baseLog)
+                    ? STRIPPED.getOrDefault(baseLog, Blocks.STRIPPED_OAK_LOG)
                     : baseLog;
             RotatedPillarBlock pillar = (RotatedPillarBlock) logVariant;
 
@@ -97,12 +102,11 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
         }
 
         if (random.nextFloat() < LEAF_CAP_CHANCE) {
-            placeLeafCap(level, lastLogPos, getLeavesForLog(baseLog), random);
+            placeLeafCap(level, lastLogPos,
+                    LEAVES.getOrDefault(baseLog, Blocks.OAK_LEAVES), random);
         }
 
         tryPlaceMushroomOnGround(level, lastLogPos, isXAxis, random);
-
-        LOGGER.info("[RWG] Placed fallen log ({} blocks) at {}", placedLogs.size(), surfacePos);
         return true;
     }
 
@@ -119,7 +123,8 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
         return false;
     }
 
-    private void placeLeafCap(WorldGenLevel level, BlockPos tip, Block leafBlock, RandomSource random) {
+    private void placeLeafCap(WorldGenLevel level, BlockPos tip,
+                              Block leafBlock, RandomSource random) {
         int r = 1 + random.nextInt(2);
         for (int dy = 0; dy <= r; dy++) {
             for (int dx = -r; dx <= r; dx++) {
@@ -144,8 +149,7 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
         if (random.nextFloat() >= MUSHROOM_ON_LOG_CHANCE) return;
 
         BlockPos above = logPos.above();
-        BlockState aboveState = level.getBlockState(above);
-        if (!aboveState.isAir()) return;
+        if (!level.getBlockState(above).isAir()) return;
 
         Block mushroomBlock = random.nextBoolean()
                 ? Blocks.RED_MUSHROOM
@@ -176,11 +180,9 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
             if (!SurfaceFinder.isSolidGround(level, groundPos)) continue;
 
             BlockPos placePos = groundPos.above();
-            BlockState existing = level.getBlockState(placePos);
-            if (!existing.isAir()) continue;
+            if (!level.getBlockState(placePos).isAir()) continue;
 
-            BlockState below = level.getBlockState(placePos.below());
-            if (!below.isSolid()) continue;
+            if (!level.getBlockState(placePos.below()).isSolid()) continue;
 
             level.setBlock(placePos, mushroomBlock.defaultBlockState(), 3);
             return;
@@ -192,11 +194,11 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
                 .map(k -> k.location().toString())
                 .orElse("");
 
-        if (name.contains("jungle")) return Blocks.JUNGLE_LOG;
-        if (name.contains("birch")) return Blocks.BIRCH_LOG;
-        if (name.contains("dark_forest")) return Blocks.DARK_OAK_LOG;
-        if (name.contains("cherry")) return Blocks.CHERRY_LOG;
-        if (name.contains("savanna")) return Blocks.ACACIA_LOG;
+        if (name.contains("jungle"))       return Blocks.JUNGLE_LOG;
+        if (name.contains("birch"))        return Blocks.BIRCH_LOG;
+        if (name.contains("dark_forest"))  return Blocks.DARK_OAK_LOG;
+        if (name.contains("cherry"))       return Blocks.CHERRY_LOG;
+        if (name.contains("savanna"))      return Blocks.ACACIA_LOG;
         if (name.contains("taiga") || name.contains("grove")
                 || name.contains("snowy") || name.contains("frozen")) {
             return Blocks.SPRUCE_LOG;
@@ -213,27 +215,5 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
         if (roll < 6) return Blocks.SPRUCE_LOG;
         if (roll < 8) return Blocks.BIRCH_LOG;
         return Blocks.DARK_OAK_LOG;
-    }
-
-    private Block getStrippedLog(Block logType) {
-        if (logType == Blocks.OAK_LOG) return Blocks.STRIPPED_OAK_LOG;
-        if (logType == Blocks.SPRUCE_LOG) return Blocks.STRIPPED_SPRUCE_LOG;
-        if (logType == Blocks.BIRCH_LOG) return Blocks.STRIPPED_BIRCH_LOG;
-        if (logType == Blocks.DARK_OAK_LOG) return Blocks.STRIPPED_DARK_OAK_LOG;
-        if (logType == Blocks.JUNGLE_LOG) return Blocks.STRIPPED_JUNGLE_LOG;
-        if (logType == Blocks.ACACIA_LOG) return Blocks.STRIPPED_ACACIA_LOG;
-        if (logType == Blocks.CHERRY_LOG) return Blocks.STRIPPED_CHERRY_LOG;
-        return Blocks.STRIPPED_OAK_LOG;
-    }
-
-    private Block getLeavesForLog(Block logType) {
-        if (logType == Blocks.OAK_LOG) return Blocks.OAK_LEAVES;
-        if (logType == Blocks.SPRUCE_LOG) return Blocks.SPRUCE_LEAVES;
-        if (logType == Blocks.BIRCH_LOG) return Blocks.BIRCH_LEAVES;
-        if (logType == Blocks.DARK_OAK_LOG) return Blocks.DARK_OAK_LEAVES;
-        if (logType == Blocks.JUNGLE_LOG) return Blocks.JUNGLE_LEAVES;
-        if (logType == Blocks.ACACIA_LOG) return Blocks.ACACIA_LEAVES;
-        if (logType == Blocks.CHERRY_LOG) return Blocks.CHERRY_LEAVES;
-        return Blocks.OAK_LEAVES;
     }
 }

@@ -17,6 +17,8 @@ import net.minecraft.world.level.material.Fluids;
 import org.slf4j.Logger;
 import ru.rorcik.rwg.RwgBlocks;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration> {
@@ -30,47 +32,60 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
     private static final int[][] DIRECTIONS = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
 
     private static final Set<Block> NATURAL_TERRAIN = Set.of(
-            Blocks.DIRT,
-            Blocks.GRASS_BLOCK,
-            Blocks.COARSE_DIRT,
-            Blocks.PODZOL,
-            Blocks.MYCELIUM,
-            Blocks.ROOTED_DIRT,
-            Blocks.MUD,
-            Blocks.SAND,
-            Blocks.RED_SAND,
-            Blocks.SUSPICIOUS_SAND,
-            Blocks.GRAVEL,
-            Blocks.SUSPICIOUS_GRAVEL,
-            Blocks.CLAY,
-            Blocks.SOUL_SAND,
-            Blocks.SOUL_SOIL,
-            Blocks.STONE,
-            Blocks.CALCITE,
-            Blocks.COBBLESTONE,
-            Blocks.MOSSY_COBBLESTONE,
-            Blocks.GRANITE,
-            Blocks.DIORITE,
-            Blocks.ANDESITE,
-            Blocks.DEEPSLATE,
-            Blocks.TUFF,
-            Blocks.BLACKSTONE,
-            Blocks.BASALT,
-            Blocks.SMOOTH_BASALT,
-            Blocks.NETHERRACK,
-            Blocks.END_STONE,
-            Blocks.SANDSTONE,
-            Blocks.RED_SANDSTONE,
-            Blocks.TERRACOTTA,
-            Blocks.WHITE_TERRACOTTA,
-            Blocks.ORANGE_TERRACOTTA,
-            Blocks.RED_TERRACOTTA,
-            Blocks.BROWN_TERRACOTTA,
-            Blocks.YELLOW_TERRACOTTA,
+            Blocks.DIRT, Blocks.GRASS_BLOCK, Blocks.COARSE_DIRT, Blocks.PODZOL,
+            Blocks.MYCELIUM, Blocks.ROOTED_DIRT, Blocks.MUD,
+            Blocks.SAND, Blocks.RED_SAND, Blocks.SUSPICIOUS_SAND,
+            Blocks.GRAVEL, Blocks.SUSPICIOUS_GRAVEL, Blocks.CLAY,
+            Blocks.SOUL_SAND, Blocks.SOUL_SOIL,
+            Blocks.STONE, Blocks.CALCITE, Blocks.COBBLESTONE, Blocks.MOSSY_COBBLESTONE,
+            Blocks.GRANITE, Blocks.DIORITE, Blocks.ANDESITE,
+            Blocks.DEEPSLATE, Blocks.TUFF,
+            Blocks.BLACKSTONE, Blocks.BASALT, Blocks.SMOOTH_BASALT,
+            Blocks.NETHERRACK, Blocks.END_STONE,
+            Blocks.SANDSTONE, Blocks.RED_SANDSTONE,
+            Blocks.TERRACOTTA, Blocks.WHITE_TERRACOTTA, Blocks.ORANGE_TERRACOTTA,
+            Blocks.RED_TERRACOTTA, Blocks.BROWN_TERRACOTTA, Blocks.YELLOW_TERRACOTTA,
             Blocks.LIGHT_GRAY_TERRACOTTA,
-            Blocks.PRISMARINE,
-            Blocks.DARK_PRISMARINE
+            Blocks.PRISMARINE, Blocks.DARK_PRISMARINE
     );
+
+    private static final Map<Block, Block> SLAB_FOR_BLOCK = buildSlabMap();
+
+    private static Map<Block, Block> buildSlabMap() {
+        Map<Block, Block> m = new HashMap<>();
+        putAll(m, RwgBlocks.DIRT_SLAB.get(),
+                Blocks.DIRT, Blocks.GRASS_BLOCK, Blocks.PODZOL,
+                Blocks.ROOTED_DIRT, Blocks.MUD);
+        m.put(Blocks.COARSE_DIRT, RwgBlocks.COARSE_DIRT_SLAB.get());
+        m.put(Blocks.MYCELIUM, RwgBlocks.PODZOL_SLAB.get());
+        putAll(m, RwgBlocks.SAND_SLAB.get(), Blocks.SAND, Blocks.SUSPICIOUS_SAND);
+        m.put(Blocks.RED_SAND, RwgBlocks.RED_SAND_SLAB.get());
+        putAll(m, RwgBlocks.GRAVEL_SLAB.get(),
+                Blocks.GRAVEL, Blocks.SUSPICIOUS_GRAVEL, Blocks.CLAY,
+                Blocks.SOUL_SAND, Blocks.SOUL_SOIL);
+        putAll(m, Blocks.STONE_SLAB, Blocks.STONE, Blocks.CALCITE);
+        m.put(Blocks.COBBLESTONE, Blocks.COBBLESTONE_SLAB);
+        m.put(Blocks.MOSSY_COBBLESTONE, Blocks.MOSSY_COBBLESTONE_SLAB);
+        m.put(Blocks.GRANITE, Blocks.GRANITE_SLAB);
+        m.put(Blocks.DIORITE, Blocks.DIORITE_SLAB);
+        m.put(Blocks.ANDESITE, Blocks.ANDESITE_SLAB);
+        m.put(Blocks.DEEPSLATE, Blocks.COBBLED_DEEPSLATE_SLAB);
+        m.put(Blocks.BLACKSTONE, Blocks.BLACKSTONE_SLAB);
+        putAll(m, Blocks.BLACKSTONE_SLAB, Blocks.BASALT, Blocks.SMOOTH_BASALT);
+        m.put(Blocks.SANDSTONE, Blocks.SANDSTONE_SLAB);
+        m.put(Blocks.RED_SANDSTONE, Blocks.RED_SANDSTONE_SLAB);
+        putAll(m, RwgBlocks.RED_SAND_SLAB.get(),
+                Blocks.TERRACOTTA, Blocks.WHITE_TERRACOTTA, Blocks.ORANGE_TERRACOTTA,
+                Blocks.RED_TERRACOTTA, Blocks.BROWN_TERRACOTTA, Blocks.YELLOW_TERRACOTTA,
+                Blocks.LIGHT_GRAY_TERRACOTTA);
+        m.put(Blocks.PRISMARINE, Blocks.PRISMARINE_SLAB);
+        m.put(Blocks.DARK_PRISMARINE, Blocks.DARK_PRISMARINE_SLAB);
+        return m;
+    }
+
+    private static void putAll(Map<Block, Block> map, Block slab, Block... blocks) {
+        for (Block b : blocks) map.put(b, slab);
+    }
 
     public RiverShoreSmoothingFeature(Codec<NoneFeatureConfiguration> codec) {
         super(codec);
@@ -117,10 +132,8 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
                 }
 
                 if (landState == null) continue;
-
                 if (landTopY > seaLevel) continue;
                 if (landTopY < waterY) continue;
-
                 if (!NATURAL_TERRAIN.contains(landState.getBlock())) continue;
 
                 BlockPos abovePos = new BlockPos(x, landTopY + 1, z);
@@ -145,7 +158,7 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
                 if (atSlab.getBlock() instanceof SlabBlock) continue;
                 if (!isFullBlockForReplacement(atSlab)) continue;
 
-                Block slab = getSlabFor(landState);
+                Block slab = SLAB_FOR_BLOCK.get(landState.getBlock());
                 if (slab == null) continue;
 
                 boolean shouldWaterlog = false;
@@ -182,59 +195,5 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
         if (!state.getFluidState().isEmpty()) return false;
         if (state.getBlock() instanceof SlabBlock) return false;
         return true;
-    }
-
-    private Block getSlabFor(BlockState state) {
-        Block block = state.getBlock();
-
-        if (block == Blocks.DIRT || block == Blocks.GRASS_BLOCK
-                || block == Blocks.PODZOL || block == Blocks.ROOTED_DIRT
-                || block == Blocks.MUD)
-            return RwgBlocks.DIRT_SLAB.get();
-
-        if (block == Blocks.COARSE_DIRT) return RwgBlocks.COARSE_DIRT_SLAB.get();
-        if (block == Blocks.MYCELIUM) return RwgBlocks.PODZOL_SLAB.get();
-
-        if (block == Blocks.SAND || block == Blocks.SUSPICIOUS_SAND)
-            return RwgBlocks.SAND_SLAB.get();
-        if (block == Blocks.RED_SAND) return RwgBlocks.RED_SAND_SLAB.get();
-
-        if (block == Blocks.GRAVEL || block == Blocks.SUSPICIOUS_GRAVEL
-                || block == Blocks.CLAY || block == Blocks.SOUL_SAND
-                || block == Blocks.SOUL_SOIL)
-            return RwgBlocks.GRAVEL_SLAB.get();
-
-        if (block == Blocks.STONE || block == Blocks.CALCITE)
-            return Blocks.STONE_SLAB;
-
-        if (block == Blocks.COBBLESTONE) return Blocks.COBBLESTONE_SLAB;
-        if (block == Blocks.MOSSY_COBBLESTONE) return Blocks.MOSSY_COBBLESTONE_SLAB;
-
-        if (block == Blocks.GRANITE) return Blocks.GRANITE_SLAB;
-        if (block == Blocks.DIORITE) return Blocks.DIORITE_SLAB;
-        if (block == Blocks.ANDESITE) return Blocks.ANDESITE_SLAB;
-
-        if (block == Blocks.DEEPSLATE) return Blocks.COBBLED_DEEPSLATE_SLAB;
-
-        if (block == Blocks.BLACKSTONE) return Blocks.BLACKSTONE_SLAB;
-        if (block == Blocks.BASALT || block == Blocks.SMOOTH_BASALT)
-            return Blocks.BLACKSTONE_SLAB;
-
-        if (block == Blocks.SANDSTONE) return Blocks.SANDSTONE_SLAB;
-        if (block == Blocks.RED_SANDSTONE) return Blocks.RED_SANDSTONE_SLAB;
-
-        if (block == Blocks.TERRACOTTA
-                || block == Blocks.WHITE_TERRACOTTA
-                || block == Blocks.ORANGE_TERRACOTTA
-                || block == Blocks.RED_TERRACOTTA
-                || block == Blocks.BROWN_TERRACOTTA
-                || block == Blocks.YELLOW_TERRACOTTA
-                || block == Blocks.LIGHT_GRAY_TERRACOTTA)
-            return RwgBlocks.RED_SAND_SLAB.get();
-
-        if (block == Blocks.PRISMARINE) return Blocks.PRISMARINE_SLAB;
-        if (block == Blocks.DARK_PRISMARINE) return Blocks.DARK_PRISMARINE_SLAB;
-
-        return null;
     }
 }

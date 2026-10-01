@@ -4,6 +4,7 @@ import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -15,7 +16,59 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
 import net.minecraft.world.phys.shapes.VoxelShape;
 import ru.rorcik.rwg.RwgBlocks;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
+
+    private static final Map<Block, Block> SLAB_FOR_BLOCK = buildSlabMap();
+
+    private static Map<Block, Block> buildSlabMap() {
+        Map<Block, Block> m = new HashMap<>();
+        m.put(Blocks.DIRT, RwgBlocks.DIRT_SLAB.get());
+        m.put(Blocks.GRASS_BLOCK, RwgBlocks.GRASS_SLAB.get());
+        m.put(Blocks.COARSE_DIRT, RwgBlocks.COARSE_DIRT_SLAB.get());
+        m.put(Blocks.PODZOL, RwgBlocks.PODZOL_SLAB.get());
+        m.put(Blocks.DIRT_PATH, RwgBlocks.DIRT_PATH_SLAB.get());
+        m.put(Blocks.SAND, RwgBlocks.SAND_SLAB.get());
+        m.put(Blocks.RED_SAND, RwgBlocks.RED_SAND_SLAB.get());
+        m.put(Blocks.GRAVEL, RwgBlocks.GRAVEL_SLAB.get());
+
+        m.put(Blocks.STONE, Blocks.STONE_SLAB);
+        m.put(Blocks.CALCITE, Blocks.DIORITE_SLAB);
+        m.put(RwgBlocks.BUDDING_DIORITE.get(), Blocks.DIORITE_SLAB);
+        m.put(Blocks.COBBLESTONE, Blocks.COBBLESTONE_SLAB);
+        m.put(Blocks.MOSSY_COBBLESTONE, Blocks.MOSSY_COBBLESTONE_SLAB);
+        m.put(Blocks.SMOOTH_STONE, Blocks.SMOOTH_STONE_SLAB);
+
+        m.put(Blocks.GRANITE, Blocks.GRANITE_SLAB);
+        m.put(Blocks.POLISHED_GRANITE, Blocks.POLISHED_GRANITE_SLAB);
+        m.put(Blocks.DIORITE, Blocks.DIORITE_SLAB);
+        m.put(Blocks.POLISHED_DIORITE, Blocks.POLISHED_DIORITE_SLAB);
+        m.put(Blocks.ANDESITE, Blocks.ANDESITE_SLAB);
+        m.put(Blocks.POLISHED_ANDESITE, Blocks.POLISHED_ANDESITE_SLAB);
+
+        m.put(Blocks.DEEPSLATE, Blocks.COBBLED_DEEPSLATE_SLAB);
+        m.put(Blocks.COBBLED_DEEPSLATE, Blocks.COBBLED_DEEPSLATE_SLAB);
+        m.put(Blocks.POLISHED_DEEPSLATE, Blocks.POLISHED_DEEPSLATE_SLAB);
+        m.put(Blocks.DEEPSLATE_BRICKS, Blocks.DEEPSLATE_BRICK_SLAB);
+        m.put(Blocks.DEEPSLATE_TILES, Blocks.DEEPSLATE_TILE_SLAB);
+
+        m.put(Blocks.BLACKSTONE, Blocks.BLACKSTONE_SLAB);
+        m.put(Blocks.POLISHED_BLACKSTONE, Blocks.POLISHED_BLACKSTONE_SLAB);
+        m.put(Blocks.POLISHED_BLACKSTONE_BRICKS, Blocks.POLISHED_BLACKSTONE_BRICK_SLAB);
+        m.put(Blocks.GILDED_BLACKSTONE, Blocks.BLACKSTONE_SLAB);
+
+        m.put(Blocks.SANDSTONE, Blocks.SANDSTONE_SLAB);
+        m.put(Blocks.SMOOTH_SANDSTONE, Blocks.SMOOTH_SANDSTONE_SLAB);
+        m.put(Blocks.CUT_SANDSTONE, Blocks.CUT_SANDSTONE_SLAB);
+        m.put(Blocks.RED_SANDSTONE, Blocks.RED_SANDSTONE_SLAB);
+        m.put(Blocks.SMOOTH_RED_SANDSTONE, Blocks.SMOOTH_RED_SANDSTONE_SLAB);
+        m.put(Blocks.CUT_RED_SANDSTONE, Blocks.CUT_RED_SANDSTONE_SLAB);
+
+        m.put(Blocks.SUSPICIOUS_SAND, RwgBlocks.SAND_SLAB.get());
+        return m;
+    }
 
     public SlabSmoothingFeature(Codec<NoneFeatureConfiguration> codec) {
         super(codec);
@@ -47,7 +100,6 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
                 if (ground == null) continue;
 
                 BlockState groundState = level.getBlockState(ground);
-
                 if (isWaterloggedSlab(groundState)) continue;
 
                 BlockState slabState = getSlabStateFor(groundState);
@@ -63,9 +115,7 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
 
                     BlockPos nGround = groundPos[nlx * 16 + nlz];
                     if (nGround == null) continue;
-
                     if (isWaterloggedSlab(level.getBlockState(nGround))) continue;
-
                     if (nGround.getY() != currentY + 1) continue;
 
                     int olx = lx + opposite[i][0];
@@ -127,85 +177,9 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     private BlockState getSlabStateFor(BlockState state) {
-        if (state.is(Blocks.DIRT))
-            return RwgBlocks.DIRT_SLAB.get().defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.GRASS_BLOCK))
-            return RwgBlocks.GRASS_SLAB.get().defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.COARSE_DIRT))
-            return RwgBlocks.COARSE_DIRT_SLAB.get().defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.PODZOL))
-            return RwgBlocks.PODZOL_SLAB.get().defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.DIRT_PATH))
-            return RwgBlocks.DIRT_PATH_SLAB.get().defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.SAND))
-            return RwgBlocks.SAND_SLAB.get().defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.RED_SAND))
-            return RwgBlocks.RED_SAND_SLAB.get().defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.GRAVEL))
-            return RwgBlocks.GRAVEL_SLAB.get().defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-
-        if (state.is(Blocks.STONE))
-            return Blocks.STONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.CALCITE))
-            return Blocks.DIORITE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(RwgBlocks.BUDDING_DIORITE.get()))
-            return Blocks.DIORITE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.COBBLESTONE))
-            return Blocks.COBBLESTONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.MOSSY_COBBLESTONE))
-            return Blocks.MOSSY_COBBLESTONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.SMOOTH_STONE))
-            return Blocks.SMOOTH_STONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-
-        if (state.is(Blocks.GRANITE))
-            return Blocks.GRANITE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.POLISHED_GRANITE))
-            return Blocks.POLISHED_GRANITE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.DIORITE))
-            return Blocks.DIORITE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.POLISHED_DIORITE))
-            return Blocks.POLISHED_DIORITE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.ANDESITE))
-            return Blocks.ANDESITE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.POLISHED_ANDESITE))
-            return Blocks.POLISHED_ANDESITE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-
-        if (state.is(Blocks.DEEPSLATE))
-            return Blocks.COBBLED_DEEPSLATE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.COBBLED_DEEPSLATE))
-            return Blocks.COBBLED_DEEPSLATE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.POLISHED_DEEPSLATE))
-            return Blocks.POLISHED_DEEPSLATE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.DEEPSLATE_BRICKS))
-            return Blocks.DEEPSLATE_BRICK_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.DEEPSLATE_TILES))
-            return Blocks.DEEPSLATE_TILE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-
-        if (state.is(Blocks.BLACKSTONE))
-            return Blocks.BLACKSTONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.POLISHED_BLACKSTONE))
-            return Blocks.POLISHED_BLACKSTONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.POLISHED_BLACKSTONE_BRICKS))
-            return Blocks.POLISHED_BLACKSTONE_BRICK_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.GILDED_BLACKSTONE))
-            return Blocks.BLACKSTONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-
-        if (state.is(Blocks.SANDSTONE))
-            return Blocks.SANDSTONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.SMOOTH_SANDSTONE))
-            return Blocks.SMOOTH_SANDSTONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.CUT_SANDSTONE))
-            return Blocks.CUT_SANDSTONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.RED_SANDSTONE))
-            return Blocks.RED_SANDSTONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.SMOOTH_RED_SANDSTONE))
-            return Blocks.SMOOTH_RED_SANDSTONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        if (state.is(Blocks.CUT_RED_SANDSTONE))
-            return Blocks.CUT_RED_SANDSTONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-
-        if (state.is(Blocks.SUSPICIOUS_SAND))
-            return RwgBlocks.SAND_SLAB.get().defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-
-        return null;
+        if (state.getBlock() instanceof SlabBlock) return null;
+        Block slab = SLAB_FOR_BLOCK.get(state.getBlock());
+        if (slab == null) return null;
+        return slab.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
     }
 }

@@ -9,13 +9,13 @@ import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DoublePlantBlock;
-import net.minecraft.world.level.block.FrogspawnBlock;
 import net.minecraft.world.level.block.PointedDripstoneBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.block.state.properties.DripstoneThickness;
+import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
@@ -28,7 +28,9 @@ import ru.rorcik.rwg.world.feature.config.ShoreMaterialConfig;
 import ru.rorcik.rwg.world.feature.util.SurfaceFinder;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
 
@@ -39,20 +41,37 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
     private static final float DRIPSTONE_CHANCE      = 0.25f;
     private static final float DRY_GRASS_CHANCE      = 0.3f;
 
-    // ===== Shore decorations on MUD (EARTHY only) =====
     private static final float MUD_TALL_GRASS_P = 0.245f;
     private static final float MUD_GRASS_P      = 0.49f;
     private static final float MUD_FERN_P       = 0.735f;
     private static final float MUD_LARGE_FERN_P = 0.98f;
     private static final float MUD_PITCHER_P    = 0.99f;
 
-    // ===== Water surface decorations (EARTHY only) =====
     private static final float WATER_LILY_PAD_P       = 0.1f;
     private static final float WATER_SMALL_DRIPLEAF_P = 0.1f;
     private static final float WATER_FROGSPAWN_P      = 0.005f;
 
     private static final int SHORE_RADIUS = 3;
     private static final int WATER_RADIUS = 3;
+
+    private static final Map<Block, Block> SLAB_FOR_MATERIAL = buildSlabMap();
+
+    private static Map<Block, Block> buildSlabMap() {
+        Map<Block, Block> m = new HashMap<>();
+        putAll(m, RwgBlocks.DIRT_SLAB.get(),
+                Blocks.MUD, Blocks.DIRT, Blocks.GRASS_BLOCK,
+                Blocks.PODZOL, Blocks.ROOTED_DIRT);
+        m.put(Blocks.COARSE_DIRT, RwgBlocks.COARSE_DIRT_SLAB.get());
+        putAll(m, RwgBlocks.SAND_SLAB.get(), Blocks.SAND, Blocks.SUSPICIOUS_SAND);
+        m.put(Blocks.RED_SAND, RwgBlocks.RED_SAND_SLAB.get());
+        putAll(m, RwgBlocks.GRAVEL_SLAB.get(),
+                Blocks.GRAVEL, Blocks.SUSPICIOUS_GRAVEL, Blocks.CLAY);
+        return m;
+    }
+
+    private static void putAll(Map<Block, Block> map, Block slab, Block... blocks) {
+        for (Block b : blocks) map.put(b, slab);
+    }
 
     private enum PatchKind { EARTHY, STONE, SANDY, RED_SANDY }
 
@@ -91,8 +110,6 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
 
         return placed;
     }
-
-    // ==================== NORMAL SURFACE PATCH ====================
 
     private boolean placeSurfacePatch(WorldGenLevel level, BlockPos origin,
                                       RandomSource random, PatchKind kind) {
@@ -140,8 +157,6 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
 
         return placed > 0;
     }
-
-    // ==================== SHORE MODE ====================
 
     private boolean placeShorePatch(WorldGenLevel level, BlockPos origin,
                                     RandomSource random, PatchKind kind) {
@@ -232,8 +247,6 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
         level.setBlock(lower, Blocks.TORCHFLOWER.defaultBlockState(), 3);
     }
 
-    // ==================== WATER SURFACE DECORATIONS ====================
-
     private boolean decorateWaterSurface(WorldGenLevel level, BlockPos origin, RandomSource random) {
         int waterY = level.getSeaLevel() - 1;
         int radius = WATER_RADIUS;
@@ -278,7 +291,7 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
 
         if (RwgConfig.frogspawnInstantChance > 0.0
                 && random.nextFloat() < RwgConfig.frogspawnInstantChance) {
-            int shortDelay = 20 + random.nextInt(180); // 1-10 сек при 20 tps
+            int shortDelay = 20 + random.nextInt(180);
             level.scheduleTick(abovePos, Blocks.FROGSPAWN, shortDelay);
         }
         return true;
@@ -329,8 +342,6 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
                 || s.is(Blocks.PODZOL)
                 || s.is(Blocks.ROOTED_DIRT);
     }
-
-    // ==================== HELPERS ====================
 
     private void placeDoublePlant(WorldGenLevel level, BlockPos below, Block plant) {
         BlockPos lower = below.above();
@@ -408,8 +419,6 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
         return false;
     }
 
-    // ==================== BIOME / KIND ====================
-
     private PatchKind pickPatchKind(WorldGenLevel level, BlockPos pos) {
         String name = biomeNameAt(level, pos);
         PatchKind direct = kindFromBiomeName(name);
@@ -459,8 +468,6 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
                 || name.contains("slopes")
                 || name.contains("cliffs");
     }
-
-    // ==================== DECORATIONS ====================
 
     private void decorateSandy(WorldGenLevel level, BlockPos abovePos,
                                Block patchBlock, RandomSource random) {
