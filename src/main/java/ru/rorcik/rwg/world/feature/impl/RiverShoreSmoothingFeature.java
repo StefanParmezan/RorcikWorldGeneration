@@ -187,12 +187,11 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
     private Block getSlabFor(BlockState state) {
         Block block = state.getBlock();
 
-        if (block == Blocks.DIRT
+        if (block == Blocks.DIRT || block == Blocks.GRASS_BLOCK
                 || block == Blocks.PODZOL || block == Blocks.ROOTED_DIRT
                 || block == Blocks.MUD)
             return RwgBlocks.DIRT_SLAB.get();
 
-        if (block == Blocks.GRASS_BLOCK) return RwgBlocks.GRASS_SLAB.get();
         if (block == Blocks.COARSE_DIRT) return RwgBlocks.COARSE_DIRT_SLAB.get();
         if (block == Blocks.MYCELIUM) return RwgBlocks.PODZOL_SLAB.get();
 

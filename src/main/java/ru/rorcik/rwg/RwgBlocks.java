@@ -146,7 +146,7 @@ public class RwgBlocks {
         public static final RegistryObject<Block> BUDDING_DIORITE = BLOCKS.register("budding_diorite",
                 () -> new BuddingDioriteBlock(BlockBehaviour.Properties.of()
                         .mapColor(MapColor.QUARTZ)
-                        .strength(1.5F, 6.0F)
+                        .strength(0.9F, 6.0F)
                         .sound(SoundType.CALCITE)
                         .randomTicks()
                         .requiresCorrectToolForDrops()));

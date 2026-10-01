@@ -17,7 +17,6 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
-import ru.rorcik.rwg.command.DebugTempCommand;
 import ru.rorcik.rwg.world.RwgTerrablender;
 import ru.rorcik.rwg.world.feature.RwgFeatures;
 
@@ -29,7 +28,6 @@ public class RwgMod {
     public RwgMod(FMLJavaModLoadingContext context) {
         IEventBus modEventBus = context.getModEventBus();
         modEventBus.addListener(this::commonSetup);
-        MinecraftForge.EVENT_BUS.addListener(this::onRegisterCommands);
 
         RwgBlocks.BLOCKS.register(modEventBus);
         RwgBlocks.ITEMS.register(modEventBus);
@@ -44,11 +42,6 @@ public class RwgMod {
         LOGGER.info("Rorcik World Generation initialized");
 
         event.enqueueWork(RwgTerrablender::init);
-    }
-
-    @SubscribeEvent
-    public void onRegisterCommands(RegisterCommandsEvent event) {
-        DebugTempCommand.register(event.getDispatcher());
     }
 
     @SuppressWarnings("deprecation")

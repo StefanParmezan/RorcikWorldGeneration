@@ -22,7 +22,9 @@ public class RwgConfig {
                     "minecraft:mangrove_swamp",
                     "minecraft:swamp",
                     "minecraft:ice_spikes",
-                    "minecraft:cherry_grove"
+                    "minecraft:cherry_grove",
+                    "minecraft:deep_dark",
+                    "minecraft:lush_caves"
             ), obj -> obj instanceof String);
 
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> PHYSICS_AFFECTED_BLOCKS = BUILDER
@@ -57,6 +59,8 @@ public class RwgConfig {
     public static final ForgeConfigSpec.BooleanValue ENABLE_FERN_ON_COARSE_DIRT;
     public static final ForgeConfigSpec.BooleanValue ENABLE_MOSS_ON_MOSSY_COBBLESTONE;
     public static final ForgeConfigSpec.DoubleValue FROGSPAWN_INSTANT_CHANCE;
+    public static final ForgeConfigSpec.DoubleValue ORE_VEIN_SIZE_MULTIPLIER;
+    public static final ForgeConfigSpec.DoubleValue ORE_FREQUENCY_DIVISOR;
 
     public static final ForgeConfigSpec.BooleanValue SUPPRESS_DENSITY_WARNINGS;
 
@@ -105,6 +109,27 @@ public class RwgConfig {
 
         BUILDER.pop();
 
+        BUILDER.push("ores");
+
+        ORE_VEIN_SIZE_MULTIPLIER = BUILDER
+                .comment(
+                        "Multiplier for ore vein size (configured_feature 'size' field).",
+                        "Applies globally to every OreConfiguration (vanilla + modded).",
+                        "2.0 = veins are twice as large, 1.0 = vanilla."
+                )
+                .defineInRange("ore_vein_size_multiplier", 2.5, 0.1, 10.0);
+
+        ORE_FREQUENCY_DIVISOR = BUILDER
+                .comment(
+                        "Divisor for ore spawn frequency.",
+                        "Applies globally to every PlacedFeature whose ConfiguredFeature is an ore.",
+                        "Split into sqrt on count and sqrt on rarity, giving total reduction = divisor.",
+                        "1.0 = vanilla, 10.0 = 10x rarer, 100.0 = 100x rarer, 1000.0 = extremely rare."
+                )
+                .defineInRange("ore_frequency_divisor", 150.0, 1.0, 1000.0);
+
+        BUILDER.pop();
+
         BUILDER.push("logging");
 
         SUPPRESS_DENSITY_WARNINGS = BUILDER
@@ -136,9 +161,7 @@ public class RwgConfig {
 
         FROGSPAWN_INSTANT_CHANCE = BUILDER
                 .comment(
-                        "Chance (0.0 - 1.0) that a newly placed frogspawn will start",
-                        "near hatching (AGE 3-4 instead of 0).",
-                        "0.0 disables this — frogspawn always starts at AGE 0."
+                        "Chance (0.0 - 1.0) that a newly placed frogspawn will hatch almost immediately."
                 )
                 .defineInRange("frogspawn_instant_chance", 0.15, 0.0, 1.0);
 
@@ -171,6 +194,9 @@ public class RwgConfig {
 
     public static double frogspawnInstantChance;
 
+    public static double oreVeinSizeMultiplier = 1.0;
+    public static double oreFrequencyDivisor   = 1.0;
+
     public static boolean suppressDensityWarnings;
 
     @SubscribeEvent
@@ -196,6 +222,9 @@ public class RwgConfig {
         enableFernOnCoarseDirt          = ENABLE_FERN_ON_COARSE_DIRT.get();
         enableMossOnMossyCobblestone    = ENABLE_MOSS_ON_MOSSY_COBBLESTONE.get();
         frogspawnInstantChance          = FROGSPAWN_INSTANT_CHANCE.get();
+
+        oreVeinSizeMultiplier = ORE_VEIN_SIZE_MULTIPLIER.get();
+        oreFrequencyDivisor   = ORE_FREQUENCY_DIVISOR.get();
 
         suppressDensityWarnings = SUPPRESS_DENSITY_WARNINGS.get();
     }

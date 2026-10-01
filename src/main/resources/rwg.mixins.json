@@ -5,8 +5,11 @@
   "compatibilityLevel": "JAVA_17",
   "refmap": "rwg.refmap.json",
   "mixins": [
+    "CountPlacementAccessor",
     "MinecraftServerMixin",
-    "OverworldBiomeBuilderMixin"
+    "OreConfigurationMixin",
+    "OverworldBiomeBuilderMixin",
+    "PlacedFeatureMixin"
   ],
   "client": [],
   "injectors": {

@@ -267,17 +267,6 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
         return placed > 0;
     }
 
-    /**
-     * Икра лягушки. С шансом frogspawnInstantChance ставится с AGE 3–4,
-     * чтобы почти сразу вылупиться (AGE=4 — следующий tick, AGE=3 — через
-     * один промежуточный).
-     */
-    /**
-     * Икра лягушки. С шансом frogspawnInstantChance планируем дополнительный
-     * короткий тик (1–10 секунд), чтобы икра вылупилась почти сразу.
-     * Оригинальный длинный тик (3600–12000) остаётся в очереди, но сработает
-     * уже по пустому блоку и просто ничего не сделает.
-     */
     private boolean tryPlaceFrogspawn(WorldGenLevel level, BlockPos waterPos,
                                       BlockPos abovePos, RandomSource random) {
         BlockState water = level.getBlockState(waterPos);

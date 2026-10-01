@@ -48,8 +48,6 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
 
                 BlockState groundState = level.getBlockState(ground);
 
-                // Waterlogged-плиты ставит RiverShoreSmoothingFeature.
-                // Они уже сглаживают берег — не трогаем их и не ставим поверх.
                 if (isWaterloggedSlab(groundState)) continue;
 
                 BlockState slabState = getSlabStateFor(groundState);
@@ -66,8 +64,6 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
                     BlockPos nGround = groundPos[nlx * 16 + nlz];
                     if (nGround == null) continue;
 
-                    // Сосед-waterlogged-плита не считается «ступенькой» —
-                    // она часть берега, а не перепад высоты.
                     if (isWaterloggedSlab(level.getBlockState(nGround))) continue;
 
                     if (nGround.getY() != currentY + 1) continue;
@@ -109,7 +105,6 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
 
         for (int i = 0; i < 6; i++) {
             BlockState s = level.getBlockState(pos);
-            // Waterlogged-плита → считаем её полноценной поверхностью колонки.
             if (isWaterloggedSlab(s)) return pos.immutable();
             if (getSlabStateFor(s) != null) return pos.immutable();
             pos.move(0, -1, 0);
@@ -152,6 +147,8 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
         if (state.is(Blocks.STONE))
             return Blocks.STONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
         if (state.is(Blocks.CALCITE))
+            return Blocks.DIORITE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
+        if (state.is(RwgBlocks.BUDDING_DIORITE.get()))
             return Blocks.DIORITE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
         if (state.is(Blocks.COBBLESTONE))
             return Blocks.COBBLESTONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
