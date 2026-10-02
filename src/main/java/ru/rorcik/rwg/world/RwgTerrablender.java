@@ -34,11 +34,13 @@ public class RwgTerrablender {
         private static final Climate.Parameter EXTREME_HOT  = Climate.Parameter.span(0.8f, 1.0f);
 
         private static final Climate.Parameter FULL_RANGE   = Climate.Parameter.span(-1.0f, 1.0f);
+
+        // Исправленные ванильные границы континентальности (без пересечений)
         private static final Climate.Parameter DEEP_OCEAN   = Climate.Parameter.span(-1.0f, -0.45f);
         private static final Climate.Parameter OCEAN        = Climate.Parameter.span(-0.45f, -0.19f);
-        private static final Climate.Parameter COAST        = Climate.Parameter.span(-0.19f, -0.03f);
+        private static final Climate.Parameter COAST        = Climate.Parameter.span(-0.19f, -0.11f);
         private static final Climate.Parameter RIVER_VALLEY = Climate.Parameter.span(-0.11f, 0.03f);
-        private static final Climate.Parameter INLAND       = Climate.Parameter.span(-0.03f, 0.3f);
+        private static final Climate.Parameter INLAND       = Climate.Parameter.span(0.03f, 0.3f);
         private static final Climate.Parameter HILLS        = Climate.Parameter.span(0.3f, 1.0f);
 
         public RwgRegion(ResourceLocation name, RegionType type, int uniqueness) {
@@ -61,7 +63,7 @@ public class RwgTerrablender {
             addBiome(mapper, EXTREME_COLD, INLAND, FULL_RANGE, Biomes.SNOWY_PLAINS);
             addBiome(mapper, EXTREME_COLD, HILLS, FULL_RANGE, Biomes.FROZEN_PEAKS);
             addBiome(mapper, EXTREME_COLD, HILLS, FULL_RANGE, Biomes.SNOWY_SLOPES);
-            addOceanBiome(mapper, EXTREME_COLD, DEEP_OCEAN, Biomes.FROZEN_OCEAN);
+            addOceanBiome(mapper, EXTREME_COLD, DEEP_OCEAN, Biomes.DEEP_FROZEN_OCEAN); // Исправлено
             addOceanBiome(mapper, EXTREME_COLD, OCEAN, Biomes.FROZEN_OCEAN);
             addCoastBiome(mapper, EXTREME_COLD, Biomes.SNOWY_PLAINS);
 
@@ -69,7 +71,7 @@ public class RwgTerrablender {
             addBiome(mapper, COLD, INLAND, FULL_RANGE, Biomes.SNOWY_TAIGA);
             addBiome(mapper, COLD, HILLS, FULL_RANGE, Biomes.JAGGED_PEAKS);
             addBiome(mapper, COLD, HILLS, FULL_RANGE, Biomes.GROVE);
-            addOceanBiome(mapper, COLD, DEEP_OCEAN, Biomes.COLD_OCEAN);
+            addOceanBiome(mapper, COLD, DEEP_OCEAN, Biomes.DEEP_COLD_OCEAN); // Исправлено
             addOceanBiome(mapper, COLD, OCEAN, Biomes.COLD_OCEAN);
             addCoastBiome(mapper, COLD, Biomes.SNOWY_BEACH);
 
@@ -81,7 +83,7 @@ public class RwgTerrablender {
             addBiome(mapper, COOL, HILLS, FULL_RANGE, Biomes.WINDSWEPT_HILLS);
             addBiome(mapper, COOL, HILLS, FULL_RANGE, Biomes.WINDSWEPT_GRAVELLY_HILLS);
             addBiome(mapper, COOL, HILLS, FULL_RANGE, Biomes.WINDSWEPT_FOREST);
-            addOceanBiome(mapper, COOL, DEEP_OCEAN, Biomes.COLD_OCEAN);
+            addOceanBiome(mapper, COOL, DEEP_OCEAN, Biomes.DEEP_OCEAN); // Исправлено
             addOceanBiome(mapper, COOL, OCEAN, Biomes.OCEAN);
             addCoastBiome(mapper, COOL, Biomes.STONY_SHORE);
 
@@ -92,7 +94,7 @@ public class RwgTerrablender {
             addBiome(mapper, NEUTRAL, INLAND, Climate.Parameter.span(0.2f, 0.6f), Biomes.FLOWER_FOREST);
             addBiome(mapper, NEUTRAL, INLAND, Climate.Parameter.span(0.6f, 1.0f), Biomes.FOREST);
             addBiome(mapper, NEUTRAL, HILLS, FULL_RANGE, Biomes.MEADOW);
-            addOceanBiome(mapper, NEUTRAL, DEEP_OCEAN, Biomes.OCEAN);
+            addOceanBiome(mapper, NEUTRAL, DEEP_OCEAN, Biomes.DEEP_OCEAN); // Исправлено
             addOceanBiome(mapper, NEUTRAL, OCEAN, Biomes.OCEAN);
             addCoastBiome(mapper, NEUTRAL, Biomes.BEACH);
 
@@ -100,14 +102,14 @@ public class RwgTerrablender {
             addBiome(mapper, WARM, INLAND, FULL_RANGE, Biomes.SAVANNA);
             addBiome(mapper, WARM, HILLS, FULL_RANGE, Biomes.SAVANNA_PLATEAU);
             addBiome(mapper, WARM, HILLS, FULL_RANGE, Biomes.WINDSWEPT_SAVANNA);
-            addOceanBiome(mapper, WARM, DEEP_OCEAN, Biomes.LUKEWARM_OCEAN);
+            addOceanBiome(mapper, WARM, DEEP_OCEAN, Biomes.DEEP_LUKEWARM_OCEAN); // Исправлено
             addOceanBiome(mapper, WARM, OCEAN, Biomes.LUKEWARM_OCEAN);
             addCoastBiome(mapper, WARM, Biomes.BEACH);
 
             // ===== Hot =====
             addBiome(mapper, HOT, INLAND, FULL_RANGE, Biomes.DESERT);
             addBiome(mapper, HOT, HILLS, FULL_RANGE, Biomes.STONY_PEAKS);
-            addOceanBiome(mapper, HOT, DEEP_OCEAN, Biomes.WARM_OCEAN);
+            addOceanBiome(mapper, HOT, DEEP_OCEAN, Biomes.DEEP_OCEAN); // Исправлено
             addOceanBiome(mapper, HOT, OCEAN, Biomes.WARM_OCEAN);
             addCoastBiome(mapper, HOT, Biomes.DESERT);
 
@@ -115,7 +117,7 @@ public class RwgTerrablender {
             addBiome(mapper, EXTREME_HOT, INLAND, Climate.Parameter.span(-1.0f, 0.2f), Biomes.BADLANDS);
             addBiome(mapper, EXTREME_HOT, INLAND, Climate.Parameter.span(0.2f, 1.0f), Biomes.WOODED_BADLANDS);
             addBiome(mapper, EXTREME_HOT, HILLS, FULL_RANGE, Biomes.ERODED_BADLANDS);
-            addOceanBiome(mapper, EXTREME_HOT, DEEP_OCEAN, Biomes.WARM_OCEAN);
+            addOceanBiome(mapper, EXTREME_HOT, DEEP_OCEAN, Biomes.DEEP_OCEAN); // Исправлено
             addOceanBiome(mapper, EXTREME_HOT, OCEAN, Biomes.WARM_OCEAN);
             addCoastBiome(mapper, EXTREME_HOT, Biomes.BADLANDS);
         }
@@ -129,8 +131,8 @@ public class RwgTerrablender {
                             FULL_RANGE,
                             RIVER_VALLEY,
                             FULL_RANGE,
-                            Climate.Parameter.point(0.0f),
                             FULL_RANGE,
+                            Climate.Parameter.point(0.0f), // Weirdness point для рек (6-й аргумент)
                             0.0f
                     ),
                     biome
