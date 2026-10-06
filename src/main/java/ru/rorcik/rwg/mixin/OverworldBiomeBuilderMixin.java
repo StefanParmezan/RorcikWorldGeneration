@@ -10,7 +10,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import ru.rorcik.rwg.RwgConfig;
 
-import java.util.List;
 import java.util.function.Consumer;
 
 @Mixin(OverworldBiomeBuilder.class)
@@ -21,19 +20,20 @@ public abstract class OverworldBiomeBuilderMixin {
             at = @At("HEAD"),
             argsOnly = true
     )
-    private Consumer<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> rwg$filterBlacklisted(
+    private Consumer<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> rwg$filterVanilla(
             Consumer<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> original) {
 
         return pair -> {
-            List<? extends String> blacklist = RwgConfig.blacklistedBiomes;
-            if (blacklist == null || blacklist.isEmpty()) {
-                original.accept(pair);
+            String name = pair.getSecond().location().toString();
+
+            if (RwgConfig.blacklistedBiomes != null && RwgConfig.blacklistedBiomes.contains(name)) {
                 return;
             }
-            String name = pair.getSecond().location().toString();
-            if (!blacklist.contains(name)) {
-                original.accept(pair);
+            if (RwgConfig.ZONED_BIOME_IDS.contains(name)) {
+                return;
             }
+
+            original.accept(pair);
         };
     }
 }

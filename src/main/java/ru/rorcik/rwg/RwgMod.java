@@ -34,6 +34,8 @@ public class RwgMod {
         RwgBlocks.CREATIVE_MODE_TABS.register(modEventBus);
         RwgFeatures.FEATURES.register(modEventBus);
 
+        ru.rorcik.rwg.world.biomemodifier.RwgBiomeModifiers.SERIALIZERS.register(modEventBus);
+
         MinecraftForge.EVENT_BUS.register(this);
         context.registerConfig(ModConfig.Type.COMMON, RwgConfig.SPEC);
     }

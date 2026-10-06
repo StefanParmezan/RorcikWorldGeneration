@@ -3,6 +3,7 @@ package ru.rorcik.rwg.world.feature.impl;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
@@ -91,6 +92,7 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
         if (!isValidSurface(topState)) return false;
 
         PatchKind kind = pickPatchKind(level, surfacePos);
+        if (kind == null) return false;
 
         int waterY = level.getSeaLevel() - 1;
         boolean nearWater    = isNearWater(level, surfacePos);
@@ -420,12 +422,16 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     private PatchKind pickPatchKind(WorldGenLevel level, BlockPos pos) {
-        String name = biomeNameAt(level, pos);
-        PatchKind direct = kindFromBiomeName(name);
-        if (direct != null) return direct;
-
-        PatchKind neighbor = findNeighborLandKind(level, pos);
-        return neighbor != null ? neighbor : PatchKind.EARTHY;
+        ResourceLocation biomeId = level.getBiome(pos).unwrapKey()
+                .map(k -> k.location()).orElse(null);
+        String kind = RwgConfig.patchKindFor(biomeId);
+        if ("skip".equals(kind)) return null;
+        return switch (kind) {
+            case "red_sandy" -> PatchKind.RED_SANDY;
+            case "sandy"     -> PatchKind.SANDY;
+            case "stone"     -> PatchKind.STONE;
+            default          -> PatchKind.EARTHY;
+        };
     }
 
     private String biomeNameAt(WorldGenLevel level, BlockPos pos) {

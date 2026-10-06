@@ -1,0 +1,6 @@
+{
+  "type": "rwg:config_feature",
+  "feature_key": "wild_farm",
+  "placed_feature": "rwg:wild_farm",
+  "step": "vegetal_decoration"
+}

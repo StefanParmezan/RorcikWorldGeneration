@@ -2,6 +2,7 @@ package ru.rorcik.rwg.world.feature.impl;
 
 import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
@@ -13,6 +14,7 @@ import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
+import ru.rorcik.rwg.RwgConfig;
 import ru.rorcik.rwg.world.feature.util.SurfaceFinder;
 
 import java.util.ArrayList;
@@ -98,20 +100,17 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     private BoulderType pickBoulderTypeByBiome(WorldGenLevel level, BlockPos pos, RandomSource random) {
-        String name = level.getBiome(pos).unwrapKey()
-                .map(k -> k.location().toString())
-                .orElse("");
-
-        if (name.equals("minecraft:desert") || name.equals("minecraft:beach")) {
-            return BoulderType.SANDSTONE;
+        ResourceLocation biomeId = level.getBiome(pos).unwrapKey()
+                .map(k -> k.location()).orElse(null);
+        String kind = RwgConfig.boulderTypeFor(biomeId);
+        if (kind != null) {
+            switch (kind) {
+                case "cold":     return random.nextBoolean() ? BoulderType.ICE : BoulderType.SNOW;
+                case "desert":   return BoulderType.SANDSTONE;
+                case "badlands": return BoulderType.RED_SANDSTONE;
+            }
         }
-        if (name.contains("badlands")) {
-            return BoulderType.RED_SANDSTONE;
-        }
-        if (COLD_BIOMES.contains(name)) {
-            return random.nextBoolean() ? BoulderType.ICE : BoulderType.SNOW;
-        }
-
+        
         int roll = random.nextInt(100);
         if (roll < 55) return BoulderType.STONE;
         if (roll < 75) return BoulderType.DEEPSLATE;

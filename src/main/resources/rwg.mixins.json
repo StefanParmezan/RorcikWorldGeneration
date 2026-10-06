@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_17",
   "refmap": "rwg.refmap.json",
   "mixins": [
+    "BiomeMixin",
     "CountPlacementAccessor",
     "MinecraftServerMixin",
     "OreConfigurationMixin",

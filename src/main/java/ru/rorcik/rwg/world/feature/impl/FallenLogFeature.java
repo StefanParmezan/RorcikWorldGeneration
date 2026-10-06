@@ -3,6 +3,7 @@ package ru.rorcik.rwg.world.feature.impl;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
@@ -14,6 +15,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
+import ru.rorcik.rwg.RwgConfig;
 import ru.rorcik.rwg.world.feature.util.SurfaceFinder;
 
 import java.util.ArrayList;
@@ -190,30 +192,17 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     private Block pickLogTypeByBiome(WorldGenLevel level, BlockPos pos, RandomSource random) {
-        String name = level.getBiome(pos).unwrapKey()
-                .map(k -> k.location().toString())
-                .orElse("");
-
-        if (name.contains("jungle"))       return Blocks.JUNGLE_LOG;
-        if (name.contains("birch"))        return Blocks.BIRCH_LOG;
-        if (name.contains("dark_forest"))  return Blocks.DARK_OAK_LOG;
-        if (name.contains("cherry"))       return Blocks.CHERRY_LOG;
-        if (name.contains("savanna"))      return Blocks.ACACIA_LOG;
-        if (name.contains("taiga") || name.contains("grove")
-                || name.contains("snowy") || name.contains("frozen")) {
-            return Blocks.SPRUCE_LOG;
-        }
-        if (name.equals("minecraft:plains")
-                || name.equals("minecraft:sunflower_plains")
-                || name.equals("minecraft:meadow")
-                || name.equals("minecraft:flower_forest")) {
-            return Blocks.OAK_LOG;
-        }
-
-        int roll = random.nextInt(10);
-        if (roll < 4) return Blocks.OAK_LOG;
-        if (roll < 6) return Blocks.SPRUCE_LOG;
-        if (roll < 8) return Blocks.BIRCH_LOG;
-        return Blocks.DARK_OAK_LOG;
+        ResourceLocation biomeId = level.getBiome(pos).unwrapKey()
+                .map(k -> k.location()).orElse(null);
+        String kind = RwgConfig.logTypeFor(biomeId);
+        return switch (kind) {
+            case "jungle"   -> Blocks.JUNGLE_LOG;
+            case "birch"    -> Blocks.BIRCH_LOG;
+            case "dark_oak" -> Blocks.DARK_OAK_LOG;
+            case "cherry"   -> Blocks.CHERRY_LOG;
+            case "acacia"   -> Blocks.ACACIA_LOG;
+            case "spruce"   -> Blocks.SPRUCE_LOG;
+            default         -> Blocks.OAK_LOG;
+        };
     }
 }

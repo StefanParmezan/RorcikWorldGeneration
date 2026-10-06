@@ -21,18 +21,6 @@ import ru.rorcik.rwg.RwgConfig;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Уменьшает частоту спавна руд.
- *
- * divisor разбивается на два множителя sqrtDiv × sqrtDiv:
- *   - CountPlacement: originalCount / sqrtDiv
- *   - RarityFilter: 1 / sqrtDiv (добавляется после count)
- *
- * Итоговое уменьшение = divisor раз.
- *
- * Масштабирование выполняется лениво — при первом вызове placeWithBiomeCheck,
- * когда Holder уже привязан к реестру.
- */
 @Mixin(PlacedFeature.class)
 public abstract class PlacedFeatureMixin {
 

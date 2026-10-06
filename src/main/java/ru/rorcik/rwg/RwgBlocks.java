@@ -190,5 +190,4 @@ public class RwgBlocks {
                     .title(net.minecraft.network.chat.Component.translatable("itemGroup.rwg"))
                     .build());
 
-    
 }

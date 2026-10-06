@@ -1,0 +1,6 @@
+{
+  "type": "rwg:config_feature",
+  "feature_key": "fallen_log",
+  "placed_feature": "rwg:fallen_log",
+  "step": "vegetal_decoration"
+}
