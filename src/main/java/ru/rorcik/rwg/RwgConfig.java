@@ -60,7 +60,7 @@ public class RwgConfig {
     public static final ForgeConfigSpec.BooleanValue SUPPRESS_DENSITY_WARNINGS;
 
     public static final ForgeConfigSpec.BooleanValue BIOME_ZONING_ENABLED;
-    
+
     public static final java.util.Set<String> ZONED_BIOME_IDS = new java.util.LinkedHashSet<>();
 
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> EXTREME_COLD_INLAND, EXTREME_COLD_HILLS, EXTREME_COLD_COAST, EXTREME_COLD_OCEAN;
@@ -95,7 +95,6 @@ public class RwgConfig {
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> PATCH_KIND_SKIP;
 
     static {
-        
         BUILDER.push("caves");
         ENABLE_OLD_CAVES = BUILDER.comment("Use old-style cave generation (pre-1.18)").define("enable_old_caves", true);
         DISABLE_VANILLA_CAVES = BUILDER.comment("Completely disable vanilla cave carvers").define("disable_vanilla_caves", true);
@@ -130,7 +129,7 @@ public class RwgConfig {
         BIOME_ZONING_ENABLED = BUILDER
                 .comment("Enable explicit biome zoning based on ConcentricTemperature rings.")
                 .define("enabled", true);
-        
+
         BUILDER.push("extreme_cold");
         EXTREME_COLD_INLAND = defineBiomeList("inland", "minecraft:snowy_plains");
         EXTREME_COLD_HILLS = defineBiomeList("hills", "minecraft:frozen_peaks", "minecraft:snowy_slopes");
@@ -184,23 +183,57 @@ public class RwgConfig {
         RIVER_FROZEN = defineBiomeList("frozen", "minecraft:frozen_river");
         RIVER_NORMAL = defineBiomeList("normal", "minecraft:river");
         BUILDER.pop();
-        BUILDER.pop(); 
+        BUILDER.pop();
 
         BUILDER.push("feature_biomes");
-        FEATURE_BOULDER = defineBiomeList("boulder", "minecraft:plains", "minecraft:sunflower_plains", "minecraft:forest", "minecraft:flower_forest", "minecraft:birch_forest", "minecraft:old_growth_birch_forest", "minecraft:dark_forest", "minecraft:taiga", "minecraft:old_growth_pine_taiga", "minecraft:old_growth_spruce_taiga", "minecraft:meadow", "minecraft:windswept_hills", "minecraft:windswept_gravelly_hills", "minecraft:windswept_forest", "minecraft:savanna", "minecraft:savanna_plateau", "minecraft:windswept_savanna", "minecraft:stony_peaks", "minecraft:desert", "minecraft:beach", "minecraft:badlands", "minecraft:eroded_badlands", "minecraft:wooded_badlands", "minecraft:snowy_plains", "minecraft:snowy_taiga", "minecraft:snowy_beach", "minecraft:ice_spikes", "minecraft:grove", "minecraft:snowy_slopes", "minecraft:jagged_peaks", "minecraft:frozen_peaks", "minecraft:frozen_river");
-        FEATURE_FALLEN_LOG = defineBiomeList("fallen_log", "minecraft:forest", "minecraft:flower_forest", "minecraft:birch_forest", "minecraft:old_growth_birch_forest", "minecraft:dark_forest", "minecraft:taiga", "minecraft:old_growth_pine_taiga", "minecraft:old_growth_spruce_taiga", "minecraft:plains", "minecraft:sunflower_plains", "minecraft:meadow", "minecraft:cherry_grove", "minecraft:windswept_forest", "minecraft:windswept_hills", "minecraft:windswept_gravelly_hills", "minecraft:grove");
-        FEATURE_WILD_FARM = defineBiomeList("wild_farm", "minecraft:plains", "minecraft:sunflower_plains", "minecraft:forest", "minecraft:flower_forest", "minecraft:birch_forest", "minecraft:meadow", "minecraft:taiga");
-        FEATURE_EARTHY_PATCHES = defineBiomeList("earthy_patches",
+        FEATURE_BOULDER = defineBiomeList("boulder",
                 "minecraft:plains", "minecraft:sunflower_plains", "minecraft:forest", "minecraft:flower_forest",
                 "minecraft:birch_forest", "minecraft:old_growth_birch_forest", "minecraft:dark_forest",
                 "minecraft:taiga", "minecraft:old_growth_pine_taiga", "minecraft:old_growth_spruce_taiga",
-                "minecraft:meadow", "minecraft:windswept_forest", "minecraft:windswept_hills",
-                "minecraft:windswept_gravelly_hills", "minecraft:cherry_grove", "minecraft:savanna",
-                "minecraft:savanna_plateau", "minecraft:windswept_savanna"
-        );
-        FEATURE_RIVER_VEGETATION = defineBiomeList("river_vegetation", "minecraft:river", "minecraft:frozen_river");
+                "minecraft:meadow", "minecraft:windswept_hills", "minecraft:windswept_gravelly_hills",
+                "minecraft:windswept_forest", "minecraft:savanna", "minecraft:savanna_plateau",
+                "minecraft:windswept_savanna", "minecraft:stony_peaks", "minecraft:desert", "minecraft:beach",
+                "minecraft:badlands", "minecraft:eroded_badlands", "minecraft:wooded_badlands",
+                "minecraft:snowy_plains", "minecraft:snowy_taiga", "minecraft:snowy_beach",
+                "minecraft:ice_spikes", "minecraft:grove", "minecraft:snowy_slopes",
+                "minecraft:jagged_peaks", "minecraft:frozen_peaks",
+                "minecraft:river", "minecraft:frozen_river");
+
+        FEATURE_FALLEN_LOG = defineBiomeList("fallen_log",
+                "minecraft:forest", "minecraft:flower_forest", "minecraft:birch_forest",
+                "minecraft:old_growth_birch_forest", "minecraft:dark_forest", "minecraft:taiga",
+                "minecraft:old_growth_pine_taiga", "minecraft:old_growth_spruce_taiga",
+                "minecraft:plains", "minecraft:sunflower_plains", "minecraft:meadow",
+                "minecraft:cherry_grove", "minecraft:windswept_forest", "minecraft:windswept_hills",
+                "minecraft:windswept_gravelly_hills", "minecraft:grove",
+                "minecraft:river", "minecraft:frozen_river");
+
+        FEATURE_WILD_FARM = defineBiomeList("wild_farm",
+                "minecraft:plains", "minecraft:sunflower_plains", "minecraft:forest",
+                "minecraft:flower_forest", "minecraft:birch_forest", "minecraft:meadow", "minecraft:taiga");
+
+        FEATURE_EARTHY_PATCHES = defineBiomeList("earthy_patches",
+                "minecraft:plains", "minecraft:sunflower_plains", "minecraft:forest", "minecraft:flower_forest",
+                "minecraft:birch_forest", "minecraft:old_growth_birch_forest", "minecraft:dark_forest",
+                "minecraft:meadow", "minecraft:cherry_grove",
+                "minecraft:taiga", "minecraft:old_growth_pine_taiga", "minecraft:old_growth_spruce_taiga",
+                "minecraft:windswept_forest", "minecraft:windswept_hills", "minecraft:windswept_gravelly_hills",
+                "minecraft:savanna", "minecraft:savanna_plateau", "minecraft:windswept_savanna",
+                "minecraft:desert", "minecraft:beach",
+                "minecraft:badlands", "minecraft:wooded_badlands", "minecraft:eroded_badlands",
+                "minecraft:stony_peaks", "minecraft:jagged_peaks", "minecraft:frozen_peaks",
+                "minecraft:snowy_slopes", "minecraft:grove", "minecraft:stony_shore",
+                "minecraft:river", "minecraft:frozen_river");
+
+        FEATURE_RIVER_VEGETATION = defineBiomeList("river_vegetation", "*");
         FEATURE_SLAB_SMOOTHING = defineBiomeList("slab_smoothing", "*");
-        FEATURE_RIVER_SHORE_SMOOTHING = defineBiomeList("river_shore_smoothing", "minecraft:river", "minecraft:frozen_river", "minecraft:plains", "minecraft:sunflower_plains", "minecraft:forest", "minecraft:flower_forest", "minecraft:birch_forest", "minecraft:old_growth_birch_forest", "minecraft:dark_forest", "minecraft:taiga", "minecraft:old_growth_pine_taiga", "minecraft:old_growth_spruce_taiga", "minecraft:meadow", "minecraft:savanna", "minecraft:savanna_plateau", "minecraft:windswept_savanna", "minecraft:desert", "minecraft:snowy_plains", "minecraft:snowy_taiga", "minecraft:grove", "minecraft:windswept_hills", "minecraft:windswept_forest", "minecraft:windswept_gravelly_hills");
+        FEATURE_RIVER_SHORE_SMOOTHING = defineBiomeList("river_shore_smoothing",
+                "minecraft:river", "minecraft:frozen_river", "minecraft:plains", "minecraft:sunflower_plains",
+                "minecraft:forest", "minecraft:flower_forest", "minecraft:birch_forest", "minecraft:old_growth_birch_forest",
+                "minecraft:dark_forest", "minecraft:taiga", "minecraft:old_growth_pine_taiga", "minecraft:old_growth_spruce_taiga",
+                "minecraft:meadow", "minecraft:savanna", "minecraft:savanna_plateau", "minecraft:windswept_savanna",
+                "minecraft:desert", "minecraft:snowy_plains", "minecraft:snowy_taiga", "minecraft:grove",
+                "minecraft:windswept_hills", "minecraft:windswept_forest", "minecraft:windswept_gravelly_hills");
         BUILDER.pop();
 
         BUILDER.push("behavior_mapping");
@@ -225,7 +258,7 @@ public class RwgConfig {
         PATCH_KIND_STONE = defineBiomeList("stone", "#minecraft:is_mountain", "minecraft:stony_peaks", "minecraft:jagged_peaks", "minecraft:frozen_peaks", "minecraft:snowy_slopes", "minecraft:grove", "minecraft:windswept_hills", "minecraft:windswept_gravelly_hills", "minecraft:windswept_forest", "minecraft:stony_shore");
         PATCH_KIND_SKIP = defineBiomeList("skip", "minecraft:river", "minecraft:frozen_river", "minecraft:ocean", "minecraft:deep_ocean", "minecraft:frozen_ocean", "minecraft:deep_frozen_ocean", "minecraft:cold_ocean", "minecraft:deep_cold_ocean", "minecraft:lukewarm_ocean", "minecraft:deep_lukewarm_ocean", "minecraft:warm_ocean");
         BUILDER.pop();
-        BUILDER.pop(); 
+        BUILDER.pop();
     }
 
     private static ForgeConfigSpec.ConfigValue<List<? extends String>> defineBiomeList(String name, String... defaults) {
@@ -250,7 +283,7 @@ public class RwgConfig {
     public static double frogspawnInstantChance;
     public static double oreVeinSizeMultiplier = 1.0, oreFrequencyDivisor = 1.0;
     public static boolean suppressDensityWarnings;
-    public static boolean biomeZoningEnabled; 
+    public static boolean biomeZoningEnabled;
 
     public static final Map<String, List<? extends String>> ZONE_BIOMES = new LinkedHashMap<>();
     public static final Map<String, List<? extends String>> FEATURE_BIOMES = new LinkedHashMap<>();
@@ -283,7 +316,7 @@ public class RwgConfig {
         oreFrequencyDivisor = ORE_FREQUENCY_DIVISOR.get();
         suppressDensityWarnings = SUPPRESS_DENSITY_WARNINGS.get();
         biomeZoningEnabled = BIOME_ZONING_ENABLED.get();
-        
+
         ZONE_BIOMES.clear();
         putAll(ZONE_BIOMES,
                 "extreme_cold.inland", EXTREME_COLD_INLAND, "extreme_cold.hills", EXTREME_COLD_HILLS,
@@ -401,7 +434,6 @@ public class RwgConfig {
         if (biomeId == null) return false;
         List<? extends String> neutralInland = ZONE_BIOMES.get("neutral.inland");
         if (neutralInland == null || neutralInland.isEmpty()) {
-            
             return biomeId.toString().equals("minecraft:plains") || biomeId.toString().equals("minecraft:forest");
         }
         return matchesAny(neutralInland, biomeId);

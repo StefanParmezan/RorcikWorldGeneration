@@ -2,5 +2,6 @@
   "type": "rwg:config_feature",
   "feature_key": "river_vegetation",
   "placed_feature": "rwg:river_vegetation",
-  "step": "vegetal_decoration"
+  "step": "vegetal_decoration",
+  "biomes": "#minecraft:is_overworld"
 }

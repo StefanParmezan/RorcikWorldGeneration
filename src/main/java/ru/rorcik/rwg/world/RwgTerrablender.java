@@ -46,9 +46,9 @@ public class RwgTerrablender {
         private static final Climate.Parameter DEEP_OCEAN   = Climate.Parameter.span(-1.0f, -0.45f);
         private static final Climate.Parameter OCEAN        = Climate.Parameter.span(-0.45f, -0.19f);
         private static final Climate.Parameter COAST        = Climate.Parameter.span(-0.19f, -0.11f);
-        private static final Climate.Parameter RIVER_VALLEY = Climate.Parameter.span(-0.11f,  0.03f);
         private static final Climate.Parameter INLAND       = Climate.Parameter.span( 0.03f,  0.3f);
         private static final Climate.Parameter HILLS        = Climate.Parameter.span( 0.3f,  1.0f);
+        private static final Climate.Parameter RIVER_WEIRDNESS = Climate.Parameter.span(-0.24f, 0.24f);
 
         private static final float HUMIDITY_MIN = -1.0f;
         private static final float HUMIDITY_MAX =  1.0f;
@@ -165,10 +165,17 @@ public class RwgTerrablender {
                 for (String id : biomeIds) {
                     ResourceKey<Biome> key = resolveBiome(registry, id);
                     if (key == null) continue;
+
                     mapper.accept(Pair.of(
-                            Climate.parameters(t, FULL_RANGE, RIVER_VALLEY,
-                                    FULL_RANGE, FULL_RANGE,
-                                    Climate.Parameter.point(0.0f), 0.0f),
+                            Climate.parameters(
+                                    t,                                     
+                                    FULL_RANGE,                            
+                                    FULL_RANGE,                            
+                                    FULL_RANGE,                            
+                                    RIVER_WEIRDNESS,                       
+                                    Climate.Parameter.point(0.0f),         
+                                    0.0f                                   
+                            ),
                             key));
                     placed++;
                 }

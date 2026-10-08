@@ -59,14 +59,59 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
 
     private static Map<Block, Block> buildSlabMap() {
         Map<Block, Block> m = new HashMap<>();
+
         putAll(m, RwgBlocks.DIRT_SLAB.get(),
                 Blocks.MUD, Blocks.DIRT, Blocks.GRASS_BLOCK,
                 Blocks.PODZOL, Blocks.ROOTED_DIRT);
         m.put(Blocks.COARSE_DIRT, RwgBlocks.COARSE_DIRT_SLAB.get());
-        putAll(m, RwgBlocks.SAND_SLAB.get(), Blocks.SAND, Blocks.SUSPICIOUS_SAND);
+
+        putAll(m, RwgBlocks.SAND_SLAB.get(),
+                Blocks.SAND, Blocks.SUSPICIOUS_SAND);
         m.put(Blocks.RED_SAND, RwgBlocks.RED_SAND_SLAB.get());
+
+        m.put(Blocks.SANDSTONE, Blocks.SANDSTONE_SLAB);
+        m.put(Blocks.SMOOTH_SANDSTONE, Blocks.SMOOTH_SANDSTONE_SLAB);
+        m.put(Blocks.CUT_SANDSTONE, Blocks.CUT_SANDSTONE_SLAB);
+        m.put(Blocks.RED_SANDSTONE, Blocks.RED_SANDSTONE_SLAB);
+        m.put(Blocks.SMOOTH_RED_SANDSTONE, Blocks.SMOOTH_RED_SANDSTONE_SLAB);
+        m.put(Blocks.CUT_RED_SANDSTONE, Blocks.CUT_RED_SANDSTONE_SLAB);
+
         putAll(m, RwgBlocks.GRAVEL_SLAB.get(),
                 Blocks.GRAVEL, Blocks.SUSPICIOUS_GRAVEL, Blocks.CLAY);
+
+        m.put(Blocks.STONE, Blocks.STONE_SLAB);
+        m.put(Blocks.COBBLESTONE, Blocks.COBBLESTONE_SLAB);
+        m.put(Blocks.MOSSY_COBBLESTONE, Blocks.MOSSY_COBBLESTONE_SLAB);
+        m.put(Blocks.SMOOTH_STONE, Blocks.SMOOTH_STONE_SLAB);
+
+        m.put(Blocks.GRANITE, Blocks.GRANITE_SLAB);
+        m.put(Blocks.POLISHED_GRANITE, Blocks.POLISHED_GRANITE_SLAB);
+        m.put(Blocks.DIORITE, Blocks.DIORITE_SLAB);
+        m.put(Blocks.POLISHED_DIORITE, Blocks.POLISHED_DIORITE_SLAB);
+        m.put(Blocks.ANDESITE, Blocks.ANDESITE_SLAB);
+        m.put(Blocks.POLISHED_ANDESITE, Blocks.POLISHED_ANDESITE_SLAB);
+        m.put(Blocks.CALCITE, Blocks.DIORITE_SLAB);
+
+        m.put(Blocks.DEEPSLATE, Blocks.COBBLED_DEEPSLATE_SLAB);
+        m.put(Blocks.COBBLED_DEEPSLATE, Blocks.COBBLED_DEEPSLATE_SLAB);
+        m.put(Blocks.POLISHED_DEEPSLATE, Blocks.POLISHED_DEEPSLATE_SLAB);
+        m.put(Blocks.DEEPSLATE_BRICKS, Blocks.DEEPSLATE_BRICK_SLAB);
+        m.put(Blocks.DEEPSLATE_TILES, Blocks.DEEPSLATE_TILE_SLAB);
+
+        m.put(Blocks.BLACKSTONE, Blocks.BLACKSTONE_SLAB);
+        m.put(Blocks.POLISHED_BLACKSTONE, Blocks.POLISHED_BLACKSTONE_SLAB);
+        m.put(Blocks.POLISHED_BLACKSTONE_BRICKS, Blocks.POLISHED_BLACKSTONE_BRICK_SLAB);
+        m.put(Blocks.GILDED_BLACKSTONE, Blocks.BLACKSTONE_SLAB);
+        putAll(m, Blocks.BLACKSTONE_SLAB, Blocks.BASALT, Blocks.SMOOTH_BASALT);
+
+        putAll(m, RwgBlocks.RED_SAND_SLAB.get(),
+                Blocks.TERRACOTTA,
+                Blocks.WHITE_TERRACOTTA, Blocks.ORANGE_TERRACOTTA,
+                Blocks.RED_TERRACOTTA, Blocks.BROWN_TERRACOTTA,
+                Blocks.YELLOW_TERRACOTTA, Blocks.LIGHT_GRAY_TERRACOTTA);
+
+        m.put(RwgBlocks.BUDDING_DIORITE.get(), Blocks.DIORITE_SLAB);
+
         return m;
     }
 
@@ -425,7 +470,20 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
         ResourceLocation biomeId = level.getBiome(pos).unwrapKey()
                 .map(k -> k.location()).orElse(null);
         String kind = RwgConfig.patchKindFor(biomeId);
-        if ("skip".equals(kind)) return null;
+
+        if ("skip".equals(kind)) {
+            String name = biomeId != null ? biomeId.toString() : "";
+            if (name.equals("minecraft:river") || name.equals("minecraft:frozen_river")) {
+                int waterY = level.getSeaLevel();
+                if (pos.getY() > waterY) {
+                    
+                    PatchKind neighborKind = findNeighborLandKind(level, pos);
+                    return neighborKind != null ? neighborKind : PatchKind.EARTHY;
+                }
+            }
+            return null;
+        }
+
         return switch (kind) {
             case "red_sandy" -> PatchKind.RED_SANDY;
             case "sandy"     -> PatchKind.SANDY;
