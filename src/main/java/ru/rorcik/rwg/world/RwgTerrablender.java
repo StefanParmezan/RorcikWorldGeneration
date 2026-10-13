@@ -10,13 +10,17 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.biome.Climate;
 import org.slf4j.Logger;
+import ru.rorcik.core.zone.BiomeZoneRegistry;
+import ru.rorcik.core.zone.IBiomeZoneProvider;
+import ru.rorcik.core.zone.TemperatureZone;
+import ru.rorcik.rwg.RwgConfig;
 import terrablender.api.Region;
 import terrablender.api.RegionType;
 import terrablender.api.Regions;
-import ru.rorcik.rwg.RwgConfig;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 public class RwgTerrablender {
@@ -24,11 +28,84 @@ public class RwgTerrablender {
     private static final Logger LOG = LogUtils.getLogger();
 
     public static void init() {
+        
+        BiomeZoneRegistry.register(new RwgBiomeZoneProvider());
+
         Regions.register(new RwgRegion(
                 ResourceLocation.fromNamespaceAndPath("rwg", "overworld"),
                 RegionType.OVERWORLD,
                 100
         ));
+
+        LOG.info("[RWG] Terrablender region and BiomeZoneProvider registered successfully.");
+    }
+
+    public static class RwgBiomeZoneProvider implements IBiomeZoneProvider {
+        @Override
+        public Optional<TemperatureZone> getZone(ResourceLocation biomeId) {
+            if (biomeId == null) return Optional.empty();
+
+            String idStr = biomeId.toString();
+
+            for (Map.Entry<String, List<? extends String>> entry : RwgConfig.ZONE_BIOMES.entrySet()) {
+                String zoneKey = entry.getKey();
+                List<? extends String> biomeIds = entry.getValue();
+
+                if (biomeIds == null || biomeIds.isEmpty()) continue;
+
+                if (zoneKey.startsWith("river.")) continue;
+
+                if (matchesBiome(biomeIds, biomeId)) {
+                    
+                    String[] parts = zoneKey.split("\\.");
+                    if (parts.length >= 1) {
+                        return Optional.ofNullable(parseTemperatureZone(parts[0]));
+                    }
+                }
+            }
+
+            return Optional.of(getFallbackZoneByTemperature(biomeId));
+        }
+
+        private boolean matchesBiome(List<? extends String> list, ResourceLocation biomeId) {
+            if (list == null || biomeId == null) return false;
+            String idStr = biomeId.toString();
+            for (String entry : list) {
+                if (entry == null || entry.isEmpty()) continue;
+                if ("*".equals(entry)) return true;
+                if (entry.equals(idStr)) return true;
+                
+            }
+            return false;
+        }
+
+        private TemperatureZone parseTemperatureZone(String tempKey) {
+            return switch (tempKey.toLowerCase()) {
+                case "extreme_cold" -> TemperatureZone.EXTREME_COLD;
+                case "cold" -> TemperatureZone.COLD;
+                case "cool" -> TemperatureZone.COOL;
+                case "neutral" -> TemperatureZone.NEUTRAL;
+                case "warm" -> TemperatureZone.WARM;
+                case "hot" -> TemperatureZone.HOT;
+                case "extreme_hot" -> TemperatureZone.EXTREME_HOT;
+                default -> TemperatureZone.NEUTRAL;
+            };
+        }
+
+        private TemperatureZone getFallbackZoneByTemperature(ResourceLocation biomeId) {
+            
+            String id = biomeId.toString().toLowerCase();
+            if (id.contains("snowy") || id.contains("frozen") || id.contains("ice") || id.contains("grove")) {
+                return TemperatureZone.COLD;
+            }
+            if (id.contains("desert") || id.contains("badlands") || id.contains("savanna")) {
+                return TemperatureZone.HOT;
+            }
+            if (id.contains("taiga") || id.contains("forest") || id.contains("jungle")) {
+                return TemperatureZone.COOL;
+            }
+            return TemperatureZone.NEUTRAL;
+        }
     }
 
     public static class RwgRegion extends Region {
@@ -168,13 +245,13 @@ public class RwgTerrablender {
 
                     mapper.accept(Pair.of(
                             Climate.parameters(
-                                    t,                                     
-                                    FULL_RANGE,                            
-                                    FULL_RANGE,                            
-                                    FULL_RANGE,                            
-                                    RIVER_WEIRDNESS,                       
-                                    Climate.Parameter.point(0.0f),         
-                                    0.0f                                   
+                                    t,
+                                    FULL_RANGE,
+                                    FULL_RANGE,
+                                    FULL_RANGE,
+                                    RIVER_WEIRDNESS,
+                                    Climate.Parameter.point(0.0f),
+                                    0.0f
                             ),
                             key));
                     placed++;

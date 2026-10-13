@@ -17,8 +17,14 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
+import ru.rorcik.core.zone.BiomeZoneRegistry;
+import ru.rorcik.core.zone.TemperatureZone;
 import ru.rorcik.rwg.world.RwgTerrablender;
 import ru.rorcik.rwg.world.feature.RwgFeatures;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Mod(RwgMod.MODID)
 public class RwgMod {
@@ -42,6 +48,18 @@ public class RwgMod {
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("Rorcik World Generation initialized");
+
+        BiomeZoneRegistry.register(biomeId -> {
+            
+            for (Map.Entry<String, List<? extends String>> entry : RwgConfig.ZONE_BIOMES.entrySet()) {
+                if (entry.getValue().contains(biomeId.toString())) {
+                    String zoneKey = entry.getKey(); 
+                    String tempZone = zoneKey.split("\\.")[0]; 
+                    return Optional.of(TemperatureZone.valueOf(tempZone.toUpperCase()));
+                }
+            }
+            return Optional.empty();
+        });
 
         event.enqueueWork(RwgTerrablender::init);
     }
