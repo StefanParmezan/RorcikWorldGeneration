@@ -6,6 +6,7 @@
   "refmap": "rwg.refmap.json",
   "mixins": [
     "BiomeMixin",
+    "ChunkAccessMixin",
     "CountPlacementAccessor",
     "MinecraftServerMixin",
     "OreConfigurationMixin",

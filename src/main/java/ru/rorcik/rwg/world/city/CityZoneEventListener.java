@@ -9,9 +9,6 @@ import com.mojang.logging.LogUtils;
 import ru.rorcik.core.event.ZoneEvents;
 import ru.rorcik.rwg.RwgMod;
 
-/**
- * Слушает события из RorcikCore и заполняет кэш зон городов в RWG.
- */
 @Mod.EventBusSubscriber(modid = RwgMod.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class CityZoneEventListener {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -20,14 +17,20 @@ public class CityZoneEventListener {
     public static void onZoneReserved(ZoneEvents.ZoneReservedEvent event) {
         ServerLevel level = ServerLifecycleHooks.getCurrentServer().overworld();
         if (level == null) {
-            LOGGER.warn("[CITY-LISTENER] Cannot add zone: overworld is null");
+            LOGGER.warn("[CITY-LISTENER] overworld is null");
             return;
         }
 
         CityZoneCache cache = CityZoneCache.get(level);
-        cache.addZone(event.centerX, event.centerZ, event.rules, event.targetHeight);
+        cache.addZone(event.centerX, event.centerZ, event.rules, event.targetHeight, event.affectedChunks);
 
-        LOGGER.info("[CITY-LISTENER] ✅ RWG received zone reservation: {} at [{}, {}] (targetHeight={})",
-                event.rules.id(), event.centerX, event.centerZ, event.targetHeight);
+        for (long chunkKey : event.affectedChunks) {
+            int cX = (int) (chunkKey >> 32);
+            int cZ = (int) (chunkKey & 0xFFFFFFFFL);
+            GlobalCityRegistry.registerChunk(cX, cZ, event.rules.id(), event.targetHeight);
+        }
+
+        LOGGER.info("[CITY-LISTENER] ✅ Зона {} на [{}, {}]: зарегистрировано {} чанков",
+                event.rules.id(), event.centerX, event.centerZ, GlobalCityRegistry.size());
     }
 }

@@ -19,11 +19,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ru.rorcik.rwg.RwgConfig;
-
+import org.slf4j.Logger;
+import com.mojang.logging.LogUtils;
 import java.util.Random;
 
 @Mixin(MinecraftServer.class)
 public abstract class MinecraftServerMixin {
+    private static final Logger LOGGER = LogUtils.getLogger();
     private static final Random RANDOM = new Random();
     private static final double NEUTRAL_ZONE_MIN = 8000.0;
     private static final double NEUTRAL_ZONE_MAX = 12000.0;
@@ -43,12 +45,13 @@ public abstract class MinecraftServerMixin {
         if (!level.dimension().equals(Level.OVERWORLD)) return;
 
         BlockPos customSpawn = findNeutralZoneSpawn(level);
-        if (customSpawn == null) {
-            return;
+        if (customSpawn != null) {
+            level.setDefaultSpawnPos(customSpawn, 0.0f);
+            LOGGER.info("[RWG-SPAWN] Successfully relocated player spawn to neutral zone at: {}", customSpawn.toShortString());
+            ci.cancel();
+        } else {
+            LOGGER.warn("[RWG-SPAWN] Could not find a valid neutral zone spawn point. Falling back to vanilla (0, 0).");
         }
-
-        level.setDefaultSpawnPos(customSpawn, 0.0f);
-        ci.cancel();
     }
 
     private static BlockPos findNeutralZoneSpawn(ServerLevel level) {
@@ -93,7 +96,7 @@ public abstract class MinecraftServerMixin {
         if (!level.getBlockState(candidate.below()).isSolid()) return null;
 
         ResourceLocation biomeName = level.getBiome(candidate).unwrapKey().map(k -> k.location()).orElse(null);
-        
+
         if (!RwgConfig.isAllowedSpawnBiome(biomeName)) return null;
 
         if (!isFlatSurface(level, x, z, surfaceY)) return null;

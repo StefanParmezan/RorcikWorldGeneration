@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import ru.rorcik.core.zone.BiomeZoneRegistry;
 import ru.rorcik.core.zone.IBiomeZoneProvider;
 import ru.rorcik.core.zone.TemperatureZone;
+import ru.rorcik.rwg.RwgBiomes;
 import ru.rorcik.rwg.RwgConfig;
 import terrablender.api.Region;
 import terrablender.api.RegionType;
@@ -177,6 +178,16 @@ public class RwgTerrablender {
                 skipped += counts[1];
             }
 
+            mapper.accept(Pair.of(
+                    Climate.parameters(NEUTRAL, Climate.Parameter.span(0.9f, 1.0f), INLAND, FULL_RANGE, FULL_RANGE, FULL_RANGE, 0.0f),
+                    RwgBiomes.PLAINS_CITY
+            ));
+
+            mapper.accept(Pair.of(
+                    Climate.parameters(HOT, Climate.Parameter.span(0.9f, 1.0f), INLAND, FULL_RANGE, FULL_RANGE, FULL_RANGE, 0.0f),
+                    RwgBiomes.DESERT_CITY
+            ));
+            
             LOG.info("[RWG] Biome zoning applied: {} entries placed, {} skipped.", placed, skipped);
         }
 

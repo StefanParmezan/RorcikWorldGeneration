@@ -41,7 +41,7 @@ public class RwgMod {
         RwgFeatures.FEATURES.register(modEventBus);
 
         ru.rorcik.rwg.world.biomemodifier.RwgBiomeModifiers.SERIALIZERS.register(modEventBus);
-
+        RwgBiomes.BIOMES.register(modEventBus);
         MinecraftForge.EVENT_BUS.register(this);
         context.registerConfig(ModConfig.Type.COMMON, RwgConfig.SPEC);
     }
@@ -50,11 +50,11 @@ public class RwgMod {
         LOGGER.info("Rorcik World Generation initialized");
 
         BiomeZoneRegistry.register(biomeId -> {
-            
+
             for (Map.Entry<String, List<? extends String>> entry : RwgConfig.ZONE_BIOMES.entrySet()) {
                 if (entry.getValue().contains(biomeId.toString())) {
-                    String zoneKey = entry.getKey(); 
-                    String tempZone = zoneKey.split("\\.")[0]; 
+                    String zoneKey = entry.getKey();
+                    String tempZone = zoneKey.split("\\.")[0];
                     return Optional.of(TemperatureZone.valueOf(tempZone.toUpperCase()));
                 }
             }

@@ -10,6 +10,8 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.config.ModConfigEvent;
 import net.minecraftforge.registries.ForgeRegistries;
+import ru.rorcik.core.zone.BiomeZoneRegistry;
+import ru.rorcik.core.zone.TemperatureZone;
 
 import java.util.*;
 
@@ -20,9 +22,6 @@ public class RwgConfig {
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> BLACKLISTED_BIOMES = BUILDER
             .comment("Biomes completely excluded from generation (also filters biome_zoning).")
             .defineList("blacklisted_biomes", Arrays.asList(
-                    "minecraft:ocean", "minecraft:deep_ocean", "minecraft:frozen_ocean", "minecraft:deep_frozen_ocean",
-                    "minecraft:cold_ocean", "minecraft:deep_cold_ocean", "minecraft:lukewarm_ocean",
-                    "minecraft:deep_lukewarm_ocean", "minecraft:warm_ocean",
                     "minecraft:mushroom_fields", "minecraft:jungle", "minecraft:sparse_jungle",
                     "minecraft:bamboo_jungle", "minecraft:mangrove_swamp", "minecraft:swamp",
                     "minecraft:ice_spikes", "minecraft:cherry_grove", "minecraft:deep_dark", "minecraft:lush_caves"
@@ -432,10 +431,31 @@ public class RwgConfig {
 
     public static boolean isAllowedSpawnBiome(ResourceLocation biomeId) {
         if (biomeId == null) return false;
-        List<? extends String> neutralInland = ZONE_BIOMES.get("neutral.inland");
-        if (neutralInland == null || neutralInland.isEmpty()) {
-            return biomeId.toString().equals("minecraft:plains") || biomeId.toString().equals("minecraft:forest");
+        String idStr = biomeId.toString();
+
+        if (blacklistedBiomes != null && blacklistedBiomes.contains(idStr)) {
+            return false;
         }
-        return matchesAny(neutralInland, biomeId);
+
+        Optional<TemperatureZone> zoneOpt = BiomeZoneRegistry.getZone(biomeId);
+
+        if (zoneOpt.isPresent()) {
+            TemperatureZone zone = zoneOpt.get();
+
+            return zone == TemperatureZone.NEUTRAL ||
+                    zone == TemperatureZone.COOL ||
+                    zone == TemperatureZone.WARM;
+        }
+
+        List<? extends String> neutralInland = ZONE_BIOMES.get("neutral.inland");
+        if (neutralInland != null) {
+            for (String allowed : neutralInland) {
+                if (allowed.equals(idStr) || allowed.equals("*")) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }
