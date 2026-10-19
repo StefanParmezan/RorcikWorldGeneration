@@ -3,5 +3,8 @@
   "feature_key": "river_vegetation",
   "placed_feature": "rwg:river_vegetation",
   "step": "vegetal_decoration",
-  "biomes": "#minecraft:is_overworld"
+  "biomes": {
+    "type": "forge:any",
+    "except": ["rwg:plains_city", "rwg:desert_city", "#minecraft:is_river"]
+  }
 }

@@ -5,7 +5,6 @@ import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
-import net.minecraft.world.level.block.BeetrootBlock;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -13,6 +12,7 @@ import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import org.slf4j.Logger;
+import ru.rorcik.rwg.RwgConfig;
 import ru.rorcik.rwg.world.feature.util.SurfaceFinder;
 
 import java.util.ArrayList;
@@ -32,8 +32,8 @@ public class WildFarmFeature extends Feature<NoneFeatureConfiguration> {
         BlockPos origin = context.origin();
         RandomSource random = context.random();
 
-        if (!hasLogged) {
-            LOGGER.info("[RWG] WildFarmFeature called at {}", origin);
+        if (!hasLogged && RwgConfig.enableLogging) {
+            LOGGER.info("Info: WildFarmFeature called at {}", origin);
             hasLogged = true;
         }
 
@@ -45,7 +45,6 @@ public class WildFarmFeature extends Feature<NoneFeatureConfiguration> {
 
         List<BlockPos> farmBlocks = new ArrayList<>();
         farmBlocks.add(surfacePos);
-
         for (int[] dir : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
             BlockPos neighbor = surfacePos.offset(dir[0], 0, dir[1]);
             int neighborY = SurfaceFinder.findSurfaceY(level, neighbor.getX(), neighbor.getZ());
@@ -70,7 +69,9 @@ public class WildFarmFeature extends Feature<NoneFeatureConfiguration> {
             }
         }
 
-        LOGGER.info("[RWG] Placed wild farm with {} blocks at {}", farmBlocks.size(), surfacePos);
+        if (RwgConfig.enableLogging) {
+            LOGGER.info("Info: Placed wild farm with {} blocks at {}", farmBlocks.size(), surfacePos);
+        }
         return !farmBlocks.isEmpty();
     }
 
@@ -83,13 +84,11 @@ public class WildFarmFeature extends Feature<NoneFeatureConfiguration> {
         int type = random.nextInt(4);
         int age = random.nextInt(8);
         if (age > 2 && age < 7) age = 1;
-
         return switch (type) {
             case 0 -> Blocks.WHEAT.defaultBlockState().setValue(CropBlock.AGE, age);
             case 1 -> Blocks.CARROTS.defaultBlockState().setValue(CropBlock.AGE, age);
             case 2 -> Blocks.POTATOES.defaultBlockState().setValue(CropBlock.AGE, age);
-            case 3 -> Blocks.BEETROOTS.defaultBlockState()
-                    .setValue(BeetrootBlock.AGE, Math.min(age, 3));
+            case 3 -> Blocks.BEETROOTS.defaultBlockState().setValue(net.minecraft.world.level.block.BeetrootBlock.AGE, Math.min(age, 3));
             default -> Blocks.WHEAT.defaultBlockState().setValue(CropBlock.AGE, age);
         };
     }

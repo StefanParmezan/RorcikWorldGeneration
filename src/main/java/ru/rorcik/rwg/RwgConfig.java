@@ -22,9 +22,12 @@ public class RwgConfig {
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> BLACKLISTED_BIOMES = BUILDER
             .comment("Biomes completely excluded from generation (also filters biome_zoning).")
             .defineList("blacklisted_biomes", Arrays.asList(
+                    "minecraft:ocean", "minecraft:deep_ocean", "minecraft:frozen_ocean", "minecraft:deep_frozen_ocean",
+                    "minecraft:cold_ocean", "minecraft:deep_cold_ocean", "minecraft:lukewarm_ocean",
+                    "minecraft:deep_lukewarm_ocean", "minecraft:warm_ocean",
                     "minecraft:mushroom_fields", "minecraft:jungle", "minecraft:sparse_jungle",
                     "minecraft:bamboo_jungle", "minecraft:mangrove_swamp", "minecraft:swamp",
-                    "minecraft:ice_spikes", "minecraft:cherry_grove", "minecraft:deep_dark", "minecraft:lush_caves"
+                    "minecraft:ice_spikes", "minecraft:cherry_grove", "minecraft:deep_dark", "minecraft:lush_caves", "minecraft:beach"
             ), obj -> obj instanceof String);
 
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> PHYSICS_AFFECTED_BLOCKS = BUILDER
@@ -56,6 +59,9 @@ public class RwgConfig {
     public static final ForgeConfigSpec.DoubleValue FROGSPAWN_INSTANT_CHANCE;
     public static final ForgeConfigSpec.DoubleValue ORE_VEIN_SIZE_MULTIPLIER;
     public static final ForgeConfigSpec.DoubleValue ORE_FREQUENCY_DIVISOR;
+
+    // <-- НОВОЕ: Глобальный переключатель логирования
+    public static final ForgeConfigSpec.BooleanValue ENABLE_LOGGING;
     public static final ForgeConfigSpec.BooleanValue SUPPRESS_DENSITY_WARNINGS;
 
     public static final ForgeConfigSpec.BooleanValue BIOME_ZONING_ENABLED;
@@ -113,6 +119,8 @@ public class RwgConfig {
         BUILDER.pop();
 
         BUILDER.push("logging");
+        // <-- НОВОЕ: Инициализация переключателя
+        ENABLE_LOGGING = BUILDER.comment("Enable detailed logging for RWG features. Set to false to disable most console output.").define("enable_logging", true);
         SUPPRESS_DENSITY_WARNINGS = BUILDER.define("suppress_density_warnings", true);
         BUILDER.pop();
 
@@ -281,6 +289,9 @@ public class RwgConfig {
     public static boolean enableEarthyPatchDecorations, enableDeadBushOnPodzol, enableFernOnCoarseDirt, enableMossOnMossyCobblestone;
     public static double frogspawnInstantChance;
     public static double oreVeinSizeMultiplier = 1.0, oreFrequencyDivisor = 1.0;
+
+    // <-- НОВОЕ:Runtime переменная
+    public static boolean enableLogging;
     public static boolean suppressDensityWarnings;
     public static boolean biomeZoningEnabled;
 
@@ -313,6 +324,9 @@ public class RwgConfig {
         frogspawnInstantChance = FROGSPAWN_INSTANT_CHANCE.get();
         oreVeinSizeMultiplier = ORE_VEIN_SIZE_MULTIPLIER.get();
         oreFrequencyDivisor = ORE_FREQUENCY_DIVISOR.get();
+
+        // <-- НОВОЕ: Чтение значения из конфига
+        enableLogging = ENABLE_LOGGING.get();
         suppressDensityWarnings = SUPPRESS_DENSITY_WARNINGS.get();
         biomeZoningEnabled = BIOME_ZONING_ENABLED.get();
 

@@ -16,21 +16,18 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
 import net.minecraft.world.level.material.Fluids;
 import org.slf4j.Logger;
 import ru.rorcik.rwg.RwgBlocks;
+import ru.rorcik.rwg.RwgConfig;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration> {
-
     private static final Logger LOG = LogUtils.getLogger();
     private static boolean hasLoggedFirstCall = false;
-
     private static final int SEARCH_ABOVE = 0;
     private static final int SEARCH_BELOW = 1;
-
     private static final int[][] DIRECTIONS = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
-
     private static final Set<Block> NATURAL_TERRAIN = Set.of(
             Blocks.DIRT, Blocks.GRASS_BLOCK, Blocks.COARSE_DIRT, Blocks.PODZOL,
             Blocks.MYCELIUM, Blocks.ROOTED_DIRT, Blocks.MUD,
@@ -48,21 +45,16 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
             Blocks.LIGHT_GRAY_TERRACOTTA,
             Blocks.PRISMARINE, Blocks.DARK_PRISMARINE
     );
-
     private static final Map<Block, Block> SLAB_FOR_BLOCK = buildSlabMap();
 
     private static Map<Block, Block> buildSlabMap() {
         Map<Block, Block> m = new HashMap<>();
-        putAll(m, RwgBlocks.DIRT_SLAB.get(),
-                Blocks.DIRT, Blocks.GRASS_BLOCK, Blocks.PODZOL,
-                Blocks.ROOTED_DIRT, Blocks.MUD);
+        putAll(m, RwgBlocks.DIRT_SLAB.get(), Blocks.DIRT, Blocks.GRASS_BLOCK, Blocks.PODZOL, Blocks.ROOTED_DIRT, Blocks.MUD);
         m.put(Blocks.COARSE_DIRT, RwgBlocks.COARSE_DIRT_SLAB.get());
         m.put(Blocks.MYCELIUM, RwgBlocks.PODZOL_SLAB.get());
         putAll(m, RwgBlocks.SAND_SLAB.get(), Blocks.SAND, Blocks.SUSPICIOUS_SAND);
         m.put(Blocks.RED_SAND, RwgBlocks.RED_SAND_SLAB.get());
-        putAll(m, RwgBlocks.GRAVEL_SLAB.get(),
-                Blocks.GRAVEL, Blocks.SUSPICIOUS_GRAVEL, Blocks.CLAY,
-                Blocks.SOUL_SAND, Blocks.SOUL_SOIL);
+        putAll(m, RwgBlocks.GRAVEL_SLAB.get(), Blocks.GRAVEL, Blocks.SUSPICIOUS_GRAVEL, Blocks.CLAY, Blocks.SOUL_SAND, Blocks.SOUL_SOIL);
         putAll(m, Blocks.STONE_SLAB, Blocks.STONE, Blocks.CALCITE);
         m.put(Blocks.COBBLESTONE, Blocks.COBBLESTONE_SLAB);
         m.put(Blocks.MOSSY_COBBLESTONE, Blocks.MOSSY_COBBLESTONE_SLAB);
@@ -74,10 +66,7 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
         putAll(m, Blocks.BLACKSTONE_SLAB, Blocks.BASALT, Blocks.SMOOTH_BASALT);
         m.put(Blocks.SANDSTONE, Blocks.SANDSTONE_SLAB);
         m.put(Blocks.RED_SANDSTONE, Blocks.RED_SANDSTONE_SLAB);
-        putAll(m, RwgBlocks.RED_SAND_SLAB.get(),
-                Blocks.TERRACOTTA, Blocks.WHITE_TERRACOTTA, Blocks.ORANGE_TERRACOTTA,
-                Blocks.RED_TERRACOTTA, Blocks.BROWN_TERRACOTTA, Blocks.YELLOW_TERRACOTTA,
-                Blocks.LIGHT_GRAY_TERRACOTTA);
+        putAll(m, RwgBlocks.RED_SAND_SLAB.get(), Blocks.TERRACOTTA, Blocks.WHITE_TERRACOTTA, Blocks.ORANGE_TERRACOTTA, Blocks.RED_TERRACOTTA, Blocks.BROWN_TERRACOTTA, Blocks.YELLOW_TERRACOTTA, Blocks.LIGHT_GRAY_TERRACOTTA);
         m.put(Blocks.PRISMARINE, Blocks.PRISMARINE_SLAB);
         m.put(Blocks.DARK_PRISMARINE, Blocks.DARK_PRISMARINE_SLAB);
         return m;
@@ -93,19 +82,17 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
 
     @Override
     public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
-        if (!hasLoggedFirstCall) {
-            LOG.info("[RWG-RIVER] place() called at {}", context.origin());
+        if (!hasLoggedFirstCall && RwgConfig.enableLogging) {
+            LOG.info("Info: RiverShoreSmoothingFeature place() called at {}", context.origin());
             hasLoggedFirstCall = true;
         }
 
         WorldGenLevel level = context.level();
         BlockPos origin = context.origin();
-
         int chunkMinX = origin.getX() & ~15;
         int chunkMinZ = origin.getZ() & ~15;
         int seaLevel = level.getSeaLevel();
         int waterY = seaLevel - 1;
-
         int placed = 0;
         int waterlogged = 0;
 
@@ -113,19 +100,16 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
             for (int lz = 0; lz < 16; lz++) {
                 int x = chunkMinX + lx;
                 int z = chunkMinZ + lz;
-
                 int landTopY = Integer.MIN_VALUE;
                 BlockState landState = null;
 
                 for (int y = seaLevel + SEARCH_ABOVE; y >= seaLevel - SEARCH_BELOW; y--) {
                     BlockPos p = new BlockPos(x, y, z);
                     BlockState s = level.getBlockState(p);
-
                     if (s.isAir()) continue;
                     if (!s.getFluidState().isEmpty()) continue;
                     if (s.is(BlockTags.LEAVES)) continue;
                     if (s.is(BlockTags.LOGS)) continue;
-
                     landTopY = y;
                     landState = s;
                     break;
@@ -170,9 +154,7 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
                     }
                 }
 
-                BlockState slabState = slab.defaultBlockState()
-                        .setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-
+                BlockState slabState = slab.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
                 if (shouldWaterlog && slabState.hasProperty(SlabBlock.WATERLOGGED)) {
                     slabState = slabState.setValue(SlabBlock.WATERLOGGED, true);
                     waterlogged++;
@@ -183,9 +165,8 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
             }
         }
 
-        if (placed > 0) {
-            LOG.debug("[RWG-RIVER] chunk [{}, {}] placed={} (waterlogged={})",
-                    chunkMinX >> 4, chunkMinZ >> 4, placed, waterlogged);
+        if (placed > 0 && RwgConfig.enableLogging) {
+            LOG.debug("Info: chunk [{}, {}] placed={} (waterlogged={})", chunkMinX >> 4, chunkMinZ >> 4, placed, waterlogged);
         }
         return placed > 0;
     }
@@ -193,7 +174,6 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
     private boolean isFullBlockForReplacement(BlockState state) {
         if (state.isAir()) return false;
         if (!state.getFluidState().isEmpty()) return false;
-        if (state.getBlock() instanceof SlabBlock) return false;
-        return true;
+        return !(state.getBlock() instanceof SlabBlock);
     }
 }

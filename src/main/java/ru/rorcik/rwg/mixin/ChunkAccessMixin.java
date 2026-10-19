@@ -16,47 +16,37 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import ru.rorcik.rwg.RwgBiomes;
+import ru.rorcik.rwg.RwgConfig;
 import ru.rorcik.rwg.world.city.GlobalCityRegistry;
 
 @Mixin(ChunkAccess.class)
 public abstract class ChunkAccessMixin {
-
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    @ModifyVariable(
-            method = "fillBiomesFromNoise",
-            at = @At("HEAD"),
-            argsOnly = true
-    )
+    @ModifyVariable(method = "fillBiomesFromNoise", at = @At("HEAD"), argsOnly = true)
     private BiomeResolver rwg$substituteBiomeResolver(BiomeResolver originalResolver) {
         return (quartX, quartY, quartZ, climateSampler) -> {
             int chunkX = quartX >> 2;
             int chunkZ = quartZ >> 2;
-
             GlobalCityRegistry.CityZoneInfo zone = GlobalCityRegistry.getZone(chunkX, chunkZ);
-
             if (zone != null) {
-                
                 MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
                 if (server != null) {
-                    
                     Registry<Biome> liveBiomeRegistry = server.registryAccess().registryOrThrow(Registries.BIOME);
-
-                    ResourceKey<Biome> cityBiomeKey = "plains".equals(zone.typeId())
-                            ? RwgBiomes.PLAINS_CITY
-                            : RwgBiomes.DESERT_CITY;
-
+                    ResourceKey<Biome> cityBiomeKey = "plains".equals(zone.typeId()) ? RwgBiomes.PLAINS_CITY : RwgBiomes.DESERT_CITY;
                     Holder<Biome> cityBiomeHolder = liveBiomeRegistry.getHolder(cityBiomeKey).orElse(null);
-
                     if (cityBiomeHolder != null) {
-                        LOGGER.debug("[RWG-MIXIN] ✅ Успешно получен валидный Holder с сетевым ID для: {}", cityBiomeKey.location());
+                        if (RwgConfig.enableLogging) {
+                            LOGGER.debug("Info: Successfully obtained valid Holder with network ID for: {}", cityBiomeKey.location());
+                        }
                         return cityBiomeHolder;
                     } else {
-                        LOGGER.warn("[RWG-MIXIN] ⚠️ Биом {} не найден в динамическом реестре мира!", cityBiomeKey.location());
+                        if (RwgConfig.enableLogging) {
+                            LOGGER.warn("Warn: Biome {} not found in dynamic world registry!", cityBiomeKey.location());
+                        }
                     }
                 }
             }
-
             return originalResolver.getNoiseBiome(quartX, quartY, quartZ, climateSampler);
         };
     }

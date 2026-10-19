@@ -14,13 +14,14 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.storage.ServerLevelData;
+import org.slf4j.Logger;
+import com.mojang.logging.LogUtils;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ru.rorcik.rwg.RwgConfig;
-import org.slf4j.Logger;
-import com.mojang.logging.LogUtils;
+
 import java.util.Random;
 
 @Mixin(MinecraftServer.class)
@@ -34,23 +35,21 @@ public abstract class MinecraftServerMixin {
     private static final int MAX_FLATNESS_VARIANCE = 3;
 
     @Inject(method = "setInitialSpawn", at = @At("HEAD"), cancellable = true)
-    private static void overrideInitialSpawn(
-            ServerLevel level,
-            ServerLevelData levelData,
-            boolean generateBonusChest,
-            boolean debug,
-            CallbackInfo ci
-    ) {
+    private static void overrideInitialSpawn(ServerLevel level, ServerLevelData levelData, boolean generateBonusChest, boolean debug, CallbackInfo ci) {
         if (!RwgConfig.applyJoinWorldSpawnMixin) return;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
 
         BlockPos customSpawn = findNeutralZoneSpawn(level);
         if (customSpawn != null) {
             level.setDefaultSpawnPos(customSpawn, 0.0f);
-            LOGGER.info("[RWG-SPAWN] Successfully relocated player spawn to neutral zone at: {}", customSpawn.toShortString());
+            if (RwgConfig.enableLogging) {
+                LOGGER.info("Info: Successfully relocated player spawn to neutral zone at: {}", customSpawn.toShortString());
+            }
             ci.cancel();
         } else {
-            LOGGER.warn("[RWG-SPAWN] Could not find a valid neutral zone spawn point. Falling back to vanilla (0, 0).");
+            if (RwgConfig.enableLogging) {
+                LOGGER.warn("Warn: Could not find a valid neutral zone spawn point. Falling back to vanilla (0, 0).");
+            }
         }
     }
 
@@ -58,15 +57,12 @@ public abstract class MinecraftServerMixin {
         BiomeSource biomeSource = level.getChunkSource().getGenerator().getBiomeSource();
         Climate.Sampler sampler = level.getChunkSource().randomState().sampler();
         int sampleY = level.getSeaLevel();
-
         for (int i = 0; i < MAX_BIOME_SAMPLES; i++) {
             double angle = RANDOM.nextDouble() * 2 * Math.PI;
             double distance = NEUTRAL_ZONE_MIN + RANDOM.nextDouble() * (NEUTRAL_ZONE_MAX - NEUTRAL_ZONE_MIN);
             int x = (int) (Math.cos(angle) * distance);
             int z = (int) (Math.sin(angle) * distance);
-
             if (!isAllowedBiomeAt(biomeSource, sampler, x, z, sampleY)) continue;
-
             BlockPos spawn = validateCandidate(level, x, z);
             if (spawn != null) return spawn;
         }
@@ -74,33 +70,21 @@ public abstract class MinecraftServerMixin {
     }
 
     private static boolean isAllowedBiomeAt(BiomeSource source, Climate.Sampler sampler, int x, int z, int sampleY) {
-        Holder<Biome> holder = source.getNoiseBiome(
-                QuartPos.fromBlock(x),
-                QuartPos.fromBlock(sampleY),
-                QuartPos.fromBlock(z),
-                sampler
-        );
+        Holder<Biome> holder = source.getNoiseBiome(QuartPos.fromBlock(x), QuartPos.fromBlock(sampleY), QuartPos.fromBlock(z), sampler);
         ResourceLocation biomeId = holder.unwrapKey().map(k -> k.location()).orElse(null);
-
         return RwgConfig.isAllowedSpawnBiome(biomeId);
     }
 
     private static BlockPos validateCandidate(ServerLevel level, int x, int z) {
         ChunkAccess chunk = level.getChunk(x >> 4, z >> 4, ChunkStatus.SURFACE, true);
         if (chunk == null) return null;
-
         int surfaceY = chunk.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x & 15, z & 15);
         BlockPos candidate = new BlockPos(x, surfaceY, z);
-
         if (!level.getBlockState(candidate).getFluidState().isEmpty()) return null;
         if (!level.getBlockState(candidate.below()).isSolid()) return null;
-
         ResourceLocation biomeName = level.getBiome(candidate).unwrapKey().map(k -> k.location()).orElse(null);
-
         if (!RwgConfig.isAllowedSpawnBiome(biomeName)) return null;
-
         if (!isFlatSurface(level, x, z, surfaceY)) return null;
-
         return candidate;
     }
 

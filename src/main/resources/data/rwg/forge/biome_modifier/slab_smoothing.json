@@ -2,5 +2,9 @@
   "type": "rwg:config_feature",
   "feature_key": "slab_smoothing",
   "placed_feature": "rwg:slab_smoothing",
-  "step": "vegetal_decoration"
+  "step": "vegetal_decoration",
+  "biomes": {
+    "type": "forge:any",
+    "except": ["rwg:plains_city", "rwg:desert_city"]
+  }
 }
