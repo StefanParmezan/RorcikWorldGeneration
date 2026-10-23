@@ -60,7 +60,6 @@ public class RwgConfig {
     public static final ForgeConfigSpec.DoubleValue ORE_VEIN_SIZE_MULTIPLIER;
     public static final ForgeConfigSpec.DoubleValue ORE_FREQUENCY_DIVISOR;
 
-    // <-- НОВОЕ: Глобальный переключатель логирования
     public static final ForgeConfigSpec.BooleanValue ENABLE_LOGGING;
     public static final ForgeConfigSpec.BooleanValue SUPPRESS_DENSITY_WARNINGS;
 
@@ -119,7 +118,7 @@ public class RwgConfig {
         BUILDER.pop();
 
         BUILDER.push("logging");
-        // <-- НОВОЕ: Инициализация переключателя
+        
         ENABLE_LOGGING = BUILDER.comment("Enable detailed logging for RWG features. Set to false to disable most console output.").define("enable_logging", true);
         SUPPRESS_DENSITY_WARNINGS = BUILDER.define("suppress_density_warnings", true);
         BUILDER.pop();
@@ -290,7 +289,6 @@ public class RwgConfig {
     public static double frogspawnInstantChance;
     public static double oreVeinSizeMultiplier = 1.0, oreFrequencyDivisor = 1.0;
 
-    // <-- НОВОЕ:Runtime переменная
     public static boolean enableLogging;
     public static boolean suppressDensityWarnings;
     public static boolean biomeZoningEnabled;
@@ -325,7 +323,6 @@ public class RwgConfig {
         oreVeinSizeMultiplier = ORE_VEIN_SIZE_MULTIPLIER.get();
         oreFrequencyDivisor = ORE_FREQUENCY_DIVISOR.get();
 
-        // <-- НОВОЕ: Чтение значения из конфига
         enableLogging = ENABLE_LOGGING.get();
         suppressDensityWarnings = SUPPRESS_DENSITY_WARNINGS.get();
         biomeZoningEnabled = BIOME_ZONING_ENABLED.get();

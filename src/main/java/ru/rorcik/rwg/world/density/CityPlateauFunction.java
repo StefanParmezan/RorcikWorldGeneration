@@ -5,6 +5,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.KeyDispatchDataCodec;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.levelgen.DensityFunction;
+import net.minecraft.world.level.levelgen.blending.Blender;
 import ru.rorcik.rwg.world.city.GlobalCityRegistry;
 
 public class CityPlateauFunction implements DensityFunction {
@@ -16,7 +17,7 @@ public class CityPlateauFunction implements DensityFunction {
     public static final Codec<CityPlateauFunction> DIRECT_CODEC = RecordCodecBuilder.create(instance ->
             instance.group(
                     DensityFunction.HOLDER_HELPER_CODEC.fieldOf("argument").forGetter(f -> f.originalDensity),
-                    Codec.INT.optionalFieldOf("blend_distance", 64).forGetter(f -> f.blendDistance), 
+                    Codec.INT.optionalFieldOf("blend_distance", 64).forGetter(f -> f.blendDistance),
                     Codec.DOUBLE.optionalFieldOf("plateau_scale", 8.0).forGetter(f -> f.plateauScale)
             ).apply(instance, CityPlateauFunction::new)
     );
@@ -48,6 +49,7 @@ public class CityPlateauFunction implements DensityFunction {
         GlobalCityRegistry.CityZoneInfo zone = GlobalCityRegistry.getZone(chunkX, chunkZ);
 
         if (zone != null) {
+            
             return computePlateauDensity(y, zone.targetHeight());
         }
 
@@ -60,21 +62,85 @@ public class CityPlateauFunction implements DensityFunction {
         double t = Mth.clamp(distance / blendDistance, 0.0, 1.0);
 
         double smoothT = t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
-        double blendFactor = 1.0 - smoothT;
+        double blendFactor = 1.0 - smoothT; 
 
+        if (blendFactor <= 0.0) {
+            return original;
+        }
+
+        int cityTargetHeight = nearestCity.info().targetHeight();
         double slopeNoise = getSlopeNoise(x, z) * blendFactor * (1.0 - blendFactor) * 8.0;
+        double effectiveCityHeight = cityTargetHeight + slopeNoise;
 
-        double effectiveTargetHeight = nearestCity.info().targetHeight() + slopeNoise;
-        double plateauDensity = (effectiveTargetHeight - y) / plateauScale;
+        double naturalHeight = estimateNaturalHeight(context, effectiveCityHeight);
 
-        return Mth.lerp(blendFactor, original, plateauDensity);
+        double blendedHeight = Mth.lerp(blendFactor, naturalHeight, effectiveCityHeight);
+        double monotonicDensity = (blendedHeight - y) / plateauScale;
+
+        if (y < naturalHeight) {
+            
+            return Mth.lerp(blendFactor, original, monotonicDensity);
+        } else {
+            
+            return monotonicDensity;
+        }
+    }
+
+    private double estimateNaturalHeight(FunctionContext context, double referenceY) {
+        int y1 = Mth.floor(referenceY - 8.0);
+        int y2 = Mth.floor(referenceY + 8.0);
+
+        double d1 = sampleOriginalDensity(context, y1);
+        double d2 = sampleOriginalDensity(context, y2);
+
+        if (Math.abs(d1 - d2) < 1.0e-4) {
+            return referenceY;
+        }
+
+        double h = y1 + (0.0 - d1) * (y2 - y1) / (d2 - d1);
+        
+        return Mth.clamp(h, referenceY - 64.0, referenceY + 64.0);
+    }
+
+    private double sampleOriginalDensity(FunctionContext context, int y) {
+        return originalDensity.compute(new ShiftedContext(context, y));
+    }
+
+    private static class ShiftedContext implements DensityFunction.FunctionContext {
+        private final DensityFunction.FunctionContext delegate;
+        private final int y;
+
+        private ShiftedContext(DensityFunction.FunctionContext delegate, int y) {
+            this.delegate = delegate;
+            this.y = y;
+        }
+
+        @Override
+        public int blockX() {
+            return delegate.blockX();
+        }
+
+        @Override
+        public int blockY() {
+            return y;
+        }
+
+        @Override
+        public int blockZ() {
+            return delegate.blockZ();
+        }
+
+        @Override
+        public Blender getBlender() {
+            return delegate.getBlender();
+        }
     }
 
     private static double getSlopeNoise(int x, int z) {
-        double freq = 0.06; 
+        double freq = 0.06;
         double nx = x * freq;
         double nz = z * freq;
-        
+
         return (Math.sin(nx) + Math.cos(nz) + Math.sin(nx * 2.3 + nz * 1.7)) * 1.2;
     }
 

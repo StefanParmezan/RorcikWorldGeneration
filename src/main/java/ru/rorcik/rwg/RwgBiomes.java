@@ -21,6 +21,8 @@ public class RwgBiomes {
             Registries.BIOME, ResourceLocation.fromNamespaceAndPath(RwgMod.MODID, "desert_city")
     );
 
+    private static final BiomeGenerationSettings EMPTY_CITY_GENERATION = BiomeGenerationSettings.EMPTY;
+
     public static final RegistryObject<Biome> PLAINS_CITY_BIOME = BIOMES.register("plains_city", () ->
             new Biome.BiomeBuilder()
                     .hasPrecipitation(true)
@@ -33,7 +35,7 @@ public class RwgBiomes {
                             .skyColor(7907327)
                             .build())
                     .mobSpawnSettings(MobSpawnSettings.EMPTY)
-                    .generationSettings(BiomeGenerationSettings.EMPTY)
+                    .generationSettings(EMPTY_CITY_GENERATION)
                     .build()
     );
 
@@ -49,7 +51,7 @@ public class RwgBiomes {
                             .skyColor(11330815)
                             .build())
                     .mobSpawnSettings(MobSpawnSettings.EMPTY)
-                    .generationSettings(BiomeGenerationSettings.EMPTY)
+                    .generationSettings(EMPTY_CITY_GENERATION)
                     .build()
     );
 }
