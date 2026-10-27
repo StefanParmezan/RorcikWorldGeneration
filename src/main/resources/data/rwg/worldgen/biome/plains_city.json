@@ -3,30 +3,30 @@
   "downfall": 0.4,
   "has_precipitation": true,
   "effects": {
-    "sky_color": 7907327,
-    "fog_color": 5921370,
-    "water_color": 4159204,
-    "water_fog_color": 329011,
-    "foliage_color": 6975545,
-    "grass_color": 6975545,
+    "sky_color": 7368811,
+    "fog_color": 7368811,
+    "water_color": 4870720,
+    "water_fog_color": 3093288,
+    "foliage_color": 4870720,
+    "grass_color": 5989195,
     "mood_sound": {
       "sound": "minecraft:ambient.cave",
-      "tick_delay": 6000,
+      "tick_delay": 3000,
       "block_search_extent": 8,
-      "offset": 2.0
+      "offset": 3.0
     },
     "additions_sound": {
       "sound": "minecraft:ambient.cave.additions",
-      "tick_chance": 0.0111
+      "tick_chance": 0.05
     },
     "music": {
-      "sound": "minecraft:music.overworld.forest",
-      "min_delay": 12000,
-      "max_delay": 24000,
-      "replace_current_music": false
+      "sound": "minecraft:music.overworld.deep_dark",
+      "min_delay": 18000,
+      "max_delay": 36000,
+      "replace_current_music": true
     },
     "fog_start": 0.0,
-    "fog_end": 48.0
+    "fog_end": 24.0
   },
   "spawners": {
     "monster": [

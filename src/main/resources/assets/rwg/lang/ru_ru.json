@@ -17,5 +17,6 @@
 
   "itemGroup.rwg": "Rorcik World Generation",
 
-  "biome.rwg.plains_city": "Город призрак"
+  "biome.rwg.plains_city": "Город призрак",
+  "biome.rwg.desert_city": "Заброшенные трущобы"
 }
