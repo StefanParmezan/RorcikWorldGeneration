@@ -15,6 +15,8 @@ public class RwgBiomeModifiers {
                     RwgMod.MODID);
 
     public static final RegistryObject<Codec<ConfigDrivenFeatureModifier>> CONFIG_FEATURE =
-            SERIALIZERS.register("config_feature",
-                    () -> ConfigDrivenFeatureModifier.CODEC);
+            SERIALIZERS.register("config_feature", () -> ConfigDrivenFeatureModifier.CODEC);
+
+    public static final RegistryObject<Codec<LsoFeatureRemovalModifier>> LSO_REMOVAL =
+            SERIALIZERS.register("lso_feature_removal", () -> LsoFeatureRemovalModifier.CODEC);
 }

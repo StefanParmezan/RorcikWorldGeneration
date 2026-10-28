@@ -65,6 +65,10 @@ public class RwgConfig {
 
     public static final ForgeConfigSpec.BooleanValue BIOME_ZONING_ENABLED;
 
+    public static final ForgeConfigSpec.BooleanValue DISABLE_LSO_SUN_FERN;
+    public static final ForgeConfigSpec.BooleanValue DISABLE_LSO_ICE_FERN;
+    public static final ForgeConfigSpec.BooleanValue DISABLE_LSO_WATER_PLANT;
+
     public static final java.util.Set<String> ZONED_BIOME_IDS = new java.util.LinkedHashSet<>();
 
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> EXTREME_COLD_INLAND, EXTREME_COLD_HILLS, EXTREME_COLD_COAST, EXTREME_COLD_OCEAN;
@@ -118,7 +122,6 @@ public class RwgConfig {
         BUILDER.pop();
 
         BUILDER.push("logging");
-        
         ENABLE_LOGGING = BUILDER.comment("Enable detailed logging for RWG features. Set to false to disable most console output.").define("enable_logging", true);
         SUPPRESS_DENSITY_WARNINGS = BUILDER.define("suppress_density_warnings", true);
         BUILDER.pop();
@@ -131,10 +134,14 @@ public class RwgConfig {
         FROGSPAWN_INSTANT_CHANCE = BUILDER.defineInRange("frogspawn_instant_chance", 0.15, 0.0, 1.0);
         BUILDER.pop();
 
+        BUILDER.push("compatibility");
+        DISABLE_LSO_SUN_FERN = BUILDER.comment("Remove sun fern generation from Legendary Survival Overhaul.").define("disableLsoSunFern", true);
+        DISABLE_LSO_ICE_FERN = BUILDER.comment("Remove ice fern generation from Legendary Survival Overhaul.").define("disableLsoIceFern", true);
+        DISABLE_LSO_WATER_PLANT = BUILDER.comment("Remove water plant generation from Legendary Survival Overhaul.").define("disableLsoWaterPlant", true);
+        BUILDER.pop();
+
         BUILDER.push("biome_zoning");
-        BIOME_ZONING_ENABLED = BUILDER
-                .comment("Enable explicit biome zoning based on ConcentricTemperature rings.")
-                .define("enabled", true);
+        BIOME_ZONING_ENABLED = BUILDER.comment("Enable explicit biome zoning based on ConcentricTemperature rings.").define("enabled", true);
 
         BUILDER.push("extreme_cold");
         EXTREME_COLD_INLAND = defineBiomeList("inland", "minecraft:snowy_plains");
@@ -293,6 +300,10 @@ public class RwgConfig {
     public static boolean suppressDensityWarnings;
     public static boolean biomeZoningEnabled;
 
+    public static boolean disableLsoSunFern;
+    public static boolean disableLsoIceFern;
+    public static boolean disableLsoWaterPlant;
+
     public static final Map<String, List<? extends String>> ZONE_BIOMES = new LinkedHashMap<>();
     public static final Map<String, List<? extends String>> FEATURE_BIOMES = new LinkedHashMap<>();
     public static final Map<String, List<? extends String>> BOULDER_TYPE_MAP = new LinkedHashMap<>();
@@ -326,6 +337,10 @@ public class RwgConfig {
         enableLogging = ENABLE_LOGGING.get();
         suppressDensityWarnings = SUPPRESS_DENSITY_WARNINGS.get();
         biomeZoningEnabled = BIOME_ZONING_ENABLED.get();
+
+        disableLsoSunFern = DISABLE_LSO_SUN_FERN.get();
+        disableLsoIceFern = DISABLE_LSO_ICE_FERN.get();
+        disableLsoWaterPlant = DISABLE_LSO_WATER_PLANT.get();
 
         ZONE_BIOMES.clear();
         putAll(ZONE_BIOMES,
@@ -383,6 +398,15 @@ public class RwgConfig {
             ForgeConfigSpec.ConfigValue<List<? extends String>> val = (ForgeConfigSpec.ConfigValue<List<? extends String>>) pairs[i + 1];
             target.put(key, val.get());
         }
+    }
+
+    public static boolean isLsoRemovalEnabled(String key) {
+        return switch (key) {
+            case "sun_fern" -> disableLsoSunFern;
+            case "ice_fern" -> disableLsoIceFern;
+            case "water_plant" -> disableLsoWaterPlant;
+            default -> false;
+        };
     }
 
     public static String boulderTypeFor(ResourceLocation biomeId) {
@@ -452,10 +476,7 @@ public class RwgConfig {
 
         if (zoneOpt.isPresent()) {
             TemperatureZone zone = zoneOpt.get();
-
-            return zone == TemperatureZone.NEUTRAL ||
-                    zone == TemperatureZone.COOL ||
-                    zone == TemperatureZone.WARM;
+            return zone == TemperatureZone.NEUTRAL || zone == TemperatureZone.COOL || zone == TemperatureZone.WARM;
         }
 
         List<? extends String> neutralInland = ZONE_BIOMES.get("neutral.inland");

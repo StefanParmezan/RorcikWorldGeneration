@@ -1,0 +1,6 @@
+{
+  "type": "rwg:lso_feature_removal",
+  "biomes": "#forge:is_aquatic/overworld",
+  "features": ["legendarysurvivaloverhaul:water_plant_placed"],
+  "config_key": "water_plant"
+}

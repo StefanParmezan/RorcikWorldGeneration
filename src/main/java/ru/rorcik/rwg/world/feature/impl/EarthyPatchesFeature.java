@@ -231,20 +231,11 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
                 if (state.getBlock() instanceof SlabBlock) continue;
                 if (!isValidSurface(state)) continue;
 
-                BlockPos abovePos = pos.above();
-                BlockState aboveState = level.getBlockState(abovePos);
-                if (aboveState.is(Blocks.LARGE_FERN)) continue;
-                if (level.getBlockState(pos.above(2)).is(Blocks.LARGE_FERN)) continue;
-
                 Block chosen = config.pick(random);
                 if (chosen == null) continue;
                 if (state.is(chosen)) continue;
 
-                if (!aboveState.isAir()
-                        && aboveState.getFluidState().isEmpty()
-                        && aboveState.canBeReplaced()) {
-                    level.setBlock(abovePos, Blocks.AIR.defaultBlockState(), 3);
-                }
+                clearDoublePlantAbove(level, pos);
 
                 level.setBlock(pos, chosen.defaultBlockState(), 2);
                 placed++;
@@ -253,6 +244,30 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
             }
         }
         return placed > 0;
+    }
+
+    private void clearDoublePlantAbove(WorldGenLevel level, BlockPos pos) {
+        BlockPos lower = pos.above();
+        BlockPos upper = pos.above(2);
+
+        BlockState lowerState = level.getBlockState(lower);
+        BlockState upperState = level.getBlockState(upper);
+
+        if (lowerState.getBlock() instanceof DoublePlantBlock) {
+            level.setBlock(lower, Blocks.AIR.defaultBlockState(), 3);
+            if (upperState.getBlock() instanceof DoublePlantBlock) {
+                level.setBlock(upper, Blocks.AIR.defaultBlockState(), 3);
+            }
+        }
+        
+        else if (upperState.getBlock() instanceof DoublePlantBlock) {
+            level.setBlock(upper, Blocks.AIR.defaultBlockState(), 3);
+            level.setBlock(lower, Blocks.AIR.defaultBlockState(), 3);
+        }
+        
+        else if (!lowerState.isAir() && lowerState.canBeReplaced()) {
+            level.setBlock(lower, Blocks.AIR.defaultBlockState(), 3);
+        }
     }
 
     private void applyShoreDecorations(WorldGenLevel level, BlockPos pos,
@@ -270,7 +285,9 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
                 || chosen == Blocks.RED_SAND
                 || chosen == Blocks.SUSPICIOUS_SAND)) {
             BlockPos abovePos = pos.above();
-            if (!level.getBlockState(abovePos).isAir()) return;
+
+            if (!canPlacePlant(level, abovePos)) return;
+
             if (random.nextFloat() < DRY_GRASS_CHANCE) {
                 level.setBlock(abovePos,
                         RwgBlocks.DRY_GRASS.get().defaultBlockState(), 3);
@@ -280,6 +297,9 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
 
     private void decorateMud(WorldGenLevel level, BlockPos pos, RandomSource random) {
         BlockPos lower = pos.above();
+
+        if (!canPlacePlant(level, lower)) return;
+
         BlockState lowerState = level.getBlockState(lower);
 
         if (!lowerState.isAir() && !lowerState.canBeReplaced()) return;
@@ -394,6 +414,8 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
         BlockPos lower = below.above();
         BlockPos upper = below.above(2);
 
+        if (!canPlacePlant(level, lower) || !canPlacePlant(level, upper)) return;
+
         BlockState lowerState = level.getBlockState(lower);
         BlockState upperState = level.getBlockState(upper);
 
@@ -401,9 +423,6 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
             if (lowerState.is(Blocks.LARGE_FERN)) return;
             if (upperState.is(Blocks.LARGE_FERN)) return;
         }
-
-        if (!lowerState.isAir() && !lowerState.canBeReplaced()) return;
-        if (!upperState.isAir() && !upperState.canBeReplaced()) return;
 
         if (!lowerState.isAir()) {
             level.setBlock(lower, Blocks.AIR.defaultBlockState(), 3);
@@ -476,7 +495,7 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
             if (name.equals("minecraft:river") || name.equals("minecraft:frozen_river")) {
                 int waterY = level.getSeaLevel();
                 if (pos.getY() > waterY) {
-                    
+
                     PatchKind neighborKind = findNeighborLandKind(level, pos);
                     return neighborKind != null ? neighborKind : PatchKind.EARTHY;
                 }
@@ -536,6 +555,8 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
     private void decorateSandy(WorldGenLevel level, BlockPos abovePos,
                                Block patchBlock, RandomSource random) {
         if (patchBlock == Blocks.SUSPICIOUS_SAND) {
+            if (!canPlacePlant(level, abovePos)) return;
+
             if (random.nextFloat() < DRY_GRASS_CHANCE) {
                 level.setBlock(abovePos, RwgBlocks.DRY_GRASS.get().defaultBlockState(), 3);
             }
@@ -553,6 +574,8 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
 
     private void decorateEarthy(WorldGenLevel level, BlockPos abovePos,
                                 Block patchBlock, RandomSource random) {
+        if (!canPlacePlant(level, abovePos)) return;
+
         if (patchBlock == Blocks.PODZOL
                 && RwgConfig.enableDeadBushOnPodzol
                 && random.nextFloat() < DEAD_BUSH_CHANCE) {
@@ -604,9 +627,11 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     private void placeFern(WorldGenLevel level, BlockPos lowerPos, RandomSource random) {
+        if (!canPlacePlant(level, lowerPos)) return;
+
         if (random.nextFloat() < LARGE_FERN_RATIO) {
             BlockPos upperPos = lowerPos.above();
-            if (level.getBlockState(upperPos).isAir()) {
+            if (canPlacePlant(level, lowerPos) && canPlacePlant(level, upperPos)) {
                 level.setBlock(lowerPos, Blocks.LARGE_FERN.defaultBlockState()
                         .setValue(DoublePlantBlock.HALF, DoubleBlockHalf.LOWER), 3);
                 level.setBlock(upperPos, Blocks.LARGE_FERN.defaultBlockState()
@@ -663,5 +688,12 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
         if (roll < 15) return Blocks.RED_SANDSTONE;
         if (roll < 30) return Blocks.SMOOTH_RED_SANDSTONE;
         return Blocks.RED_SAND;
+    }
+
+    private boolean canPlacePlant(WorldGenLevel level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        if (state.isAir()) return true;
+        if (state.canBeReplaced()) return true;
+        return false;
     }
 }

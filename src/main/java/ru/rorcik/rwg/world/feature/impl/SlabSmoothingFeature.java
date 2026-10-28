@@ -6,8 +6,10 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.DoublePlantBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
@@ -90,7 +92,6 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
         }
 
         int placed = 0;
-
         int[][] dirs     = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
         int[][] opposite = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
 
@@ -139,6 +140,7 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
                 if (aboveState.is(BlockTags.LEAVES)) continue;
                 if (aboveState.is(Blocks.BEDROCK)) continue;
                 if (!aboveState.getFluidState().isEmpty()) continue;
+
                 if (!canReplaceAbove(level, abovePos, aboveState)) continue;
 
                 level.setBlock(abovePos, slabState, 3);
@@ -172,8 +174,23 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
         if (state.isAir()) return true;
         if (state.is(Blocks.SNOW)) return true;
 
-        VoxelShape shape = state.getCollisionShape(level, pos);
-        return shape.isEmpty();
+        if (state.is(BlockTags.REPLACEABLE_BY_TREES)) return true;
+        if (state.is(BlockTags.SAPLINGS)) return true;
+        if (state.is(BlockTags.FLOWERS)) return true;
+        if (state.is(BlockTags.TALL_FLOWERS)) return true;
+
+        if (state.getCollisionShape(level, pos).isEmpty()) {
+            
+            if (state.hasBlockEntity()) return false;
+
+            if (state.is(Blocks.END_PORTAL) || state.is(Blocks.END_GATEWAY) || state.is(Blocks.BARRIER) || state.is(Blocks.LIGHT)) {
+                return false;
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     private BlockState getSlabStateFor(BlockState state) {
