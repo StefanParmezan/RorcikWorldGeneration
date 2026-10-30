@@ -15,6 +15,7 @@ import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import ru.rorcik.rwg.RwgConfig;
+import ru.rorcik.rwg.world.feature.util.DoublePlantHelper;
 import ru.rorcik.rwg.world.feature.util.SurfaceFinder;
 
 import java.util.ArrayList;
@@ -134,6 +135,10 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
                     BlockPos pos = center.offset(dx, dy, dz);
                     BlockState existing = level.getBlockState(pos);
                     if (!canBoulderOverride(existing, dy)) continue;
+
+                    if (DoublePlantHelper.isHalf(existing)) {
+                        DoublePlantHelper.clearWholePlant(level, pos, existing);
+                    }
 
                     BlockState toPlace = pickBlockForPosition(type, dy, random);
                     level.setBlock(pos, toPlace, 3);
@@ -260,7 +265,12 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
                 if (!neighborHigher) continue;
 
                 BlockPos slabPos = surfacePos.above();
-                if (!level.getBlockState(slabPos).canBeReplaced()) continue;
+                BlockState aboveState = level.getBlockState(slabPos);
+                if (!aboveState.canBeReplaced()) continue;
+
+                if (DoublePlantHelper.isHalf(aboveState)) {
+                    DoublePlantHelper.clearWholePlant(level, slabPos, aboveState);
+                }
 
                 level.setBlock(slabPos, slabBlock.defaultBlockState()
                         .setValue(SlabBlock.TYPE, SlabType.BOTTOM), 3);

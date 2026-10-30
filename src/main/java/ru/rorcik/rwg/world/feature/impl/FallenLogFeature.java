@@ -16,6 +16,7 @@ import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import ru.rorcik.rwg.RwgConfig;
+import ru.rorcik.rwg.world.feature.util.DoublePlantHelper;
 import ru.rorcik.rwg.world.feature.util.SurfaceFinder;
 
 import java.util.ArrayList;
@@ -81,8 +82,11 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
 
             BlockState existing = level.getBlockState(pos);
             if (!canLogOverride(level, pos, existing)) continue;
-
             if (!level.getBlockState(pos.below()).isSolid()) continue;
+
+            if (DoublePlantHelper.isHalf(existing)) {
+                DoublePlantHelper.clearWholePlant(level, pos, existing);
+            }
 
             Block logVariant = (random.nextFloat() < STRIPPED_PER_BLOCK_CHANCE)
                     ? STRIPPED.getOrDefault(baseLog, Blocks.STRIPPED_OAK_LOG)

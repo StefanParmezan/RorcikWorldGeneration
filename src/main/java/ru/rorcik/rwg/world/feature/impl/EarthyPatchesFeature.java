@@ -26,6 +26,7 @@ import ru.rorcik.rwg.RwgBlocks;
 import ru.rorcik.rwg.RwgConfig;
 import ru.rorcik.rwg.block.BuddingDioriteBlock;
 import ru.rorcik.rwg.world.feature.config.ShoreMaterialConfig;
+import ru.rorcik.rwg.world.feature.util.DoublePlantHelper;
 import ru.rorcik.rwg.world.feature.util.SurfaceFinder;
 
 import java.util.ArrayList;
@@ -251,21 +252,18 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
         BlockPos upper = pos.above(2);
 
         BlockState lowerState = level.getBlockState(lower);
-        BlockState upperState = level.getBlockState(upper);
+        if (DoublePlantHelper.isHalf(lowerState)) {
+            DoublePlantHelper.clearWholePlant(level, lower, lowerState);
+            return;
+        }
 
-        if (lowerState.getBlock() instanceof DoublePlantBlock) {
-            level.setBlock(lower, Blocks.AIR.defaultBlockState(), 3);
-            if (upperState.getBlock() instanceof DoublePlantBlock) {
-                level.setBlock(upper, Blocks.AIR.defaultBlockState(), 3);
-            }
+        BlockState upperState = level.getBlockState(upper);
+        if (DoublePlantHelper.isHalf(upperState)) {
+            DoublePlantHelper.clearWholePlant(level, upper, upperState);
+            return;
         }
-        
-        else if (upperState.getBlock() instanceof DoublePlantBlock) {
-            level.setBlock(upper, Blocks.AIR.defaultBlockState(), 3);
-            level.setBlock(lower, Blocks.AIR.defaultBlockState(), 3);
-        }
-        
-        else if (!lowerState.isAir() && lowerState.canBeReplaced()) {
+
+        if (!lowerState.isAir() && lowerState.canBeReplaced()) {
             level.setBlock(lower, Blocks.AIR.defaultBlockState(), 3);
         }
     }
@@ -431,10 +429,7 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
             level.setBlock(upper, Blocks.AIR.defaultBlockState(), 3);
         }
 
-        level.setBlock(lower, plant.defaultBlockState()
-                .setValue(DoublePlantBlock.HALF, DoubleBlockHalf.LOWER), 3);
-        level.setBlock(upper, plant.defaultBlockState()
-                .setValue(DoublePlantBlock.HALF, DoubleBlockHalf.UPPER), 3);
+        DoublePlantBlock.placeAt(level, plant.defaultBlockState(), lower, 3);
     }
 
     private BlockPos findShoreSurface(WorldGenLevel level, int x, int z, int waterY) {
@@ -692,6 +687,7 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
 
     private boolean canPlacePlant(WorldGenLevel level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
+        if (DoublePlantHelper.isHalf(state)) return false;
         if (state.isAir()) return true;
         if (state.canBeReplaced()) return true;
         return false;

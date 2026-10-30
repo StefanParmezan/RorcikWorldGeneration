@@ -6,17 +6,15 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.DoublePlantBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
-import net.minecraft.world.phys.shapes.VoxelShape;
 import ru.rorcik.rwg.RwgBlocks;
+import ru.rorcik.rwg.world.feature.util.DoublePlantHelper;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -142,6 +140,10 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
                 if (!aboveState.getFluidState().isEmpty()) continue;
 
                 if (!canReplaceAbove(level, abovePos, aboveState)) continue;
+
+                if (DoublePlantHelper.isHalf(aboveState)) {
+                    DoublePlantHelper.clearWholePlant(level, abovePos, aboveState);
+                }
 
                 level.setBlock(abovePos, slabState, 3);
                 placed++;
