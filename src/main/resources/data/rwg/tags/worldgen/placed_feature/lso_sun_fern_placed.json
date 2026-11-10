@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "legendarysurvivaloverhaul:sun_fern_placed",
+      "required": false
+    }
+  ]
+}

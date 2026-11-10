@@ -7,12 +7,14 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.NoiseColumn;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Climate;
-import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkStatus;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.storage.ServerLevelData;
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
@@ -54,8 +56,10 @@ public abstract class MinecraftServerMixin {
     }
 
     private static BlockPos findNeutralZoneSpawn(ServerLevel level) {
-        BiomeSource biomeSource = level.getChunkSource().getGenerator().getBiomeSource();
-        Climate.Sampler sampler = level.getChunkSource().randomState().sampler();
+        ChunkGenerator generator = level.getChunkSource().getGenerator();
+        BiomeSource biomeSource = generator.getBiomeSource();
+        RandomState randomState = level.getChunkSource().randomState();
+        Climate.Sampler sampler = randomState.sampler();
         int sampleY = level.getSeaLevel();
         for (int i = 0; i < MAX_BIOME_SAMPLES; i++) {
             double angle = RANDOM.nextDouble() * 2 * Math.PI;
@@ -63,7 +67,7 @@ public abstract class MinecraftServerMixin {
             int x = (int) (Math.cos(angle) * distance);
             int z = (int) (Math.sin(angle) * distance);
             if (!isAllowedBiomeAt(biomeSource, sampler, x, z, sampleY)) continue;
-            BlockPos spawn = validateCandidate(level, x, z);
+            BlockPos spawn = validateCandidate(level, generator, randomState, x, z);
             if (spawn != null) return spawn;
         }
         return null;
@@ -75,20 +79,31 @@ public abstract class MinecraftServerMixin {
         return RwgConfig.isAllowedSpawnBiome(biomeId);
     }
 
-    private static BlockPos validateCandidate(ServerLevel level, int x, int z) {
-        ChunkAccess chunk = level.getChunk(x >> 4, z >> 4, ChunkStatus.SURFACE, true);
-        if (chunk == null) return null;
-        int surfaceY = chunk.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x & 15, z & 15);
-        BlockPos candidate = new BlockPos(x, surfaceY, z);
-        if (!level.getBlockState(candidate).getFluidState().isEmpty()) return null;
-        if (!level.getBlockState(candidate.below()).isSolid()) return null;
-        ResourceLocation biomeName = level.getBiome(candidate).unwrapKey().map(k -> k.location()).orElse(null);
+    private static BlockPos validateCandidate(ServerLevel level, ChunkGenerator generator,
+                                              RandomState randomState, int x, int z) {
+        int surfaceY = generator.getBaseHeight(
+                x, z, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, level, randomState);
+        if (surfaceY <= level.getMinBuildHeight() || surfaceY >= level.getMaxBuildHeight()) return null;
+
+        NoiseColumn column = generator.getBaseColumn(x, z, level, randomState);
+        if (column == null) return null;
+
+        BlockState at = column.getBlock(surfaceY);
+        BlockState below = column.getBlock(surfaceY - 1);
+        if (!at.getFluidState().isEmpty()) return null;
+        if (!below.isSolid()) return null;
+
+        ResourceLocation biomeName = generator.getBiomeSource().getNoiseBiome(
+                        QuartPos.fromBlock(x), QuartPos.fromBlock(surfaceY), QuartPos.fromBlock(z),
+                        randomState.sampler())
+                .unwrapKey().map(k -> k.location()).orElse(null);
         if (!RwgConfig.isAllowedSpawnBiome(biomeName)) return null;
-        if (!isFlatSurface(level, x, z, surfaceY)) return null;
-        return candidate;
+        if (!isFlatSurface(level, generator, randomState, x, z, surfaceY)) return null;
+        return new BlockPos(x, surfaceY, z);
     }
 
-    private static boolean isFlatSurface(ServerLevel level, int x, int z, int centerY) {
+    private static boolean isFlatSurface(ServerLevel level, ChunkGenerator generator,
+                                         RandomState randomState, int x, int z, int centerY) {
         int[][] probes = {
                 {FLATNESS_RADIUS, 0}, {-FLATNESS_RADIUS, 0},
                 {0, FLATNESS_RADIUS}, {0, -FLATNESS_RADIUS},
@@ -98,9 +113,8 @@ public abstract class MinecraftServerMixin {
         for (int[] p : probes) {
             int sx = x + p[0];
             int sz = z + p[1];
-            ChunkAccess chunk = level.getChunk(sx >> 4, sz >> 4, ChunkStatus.SURFACE, false);
-            if (chunk == null) return false;
-            int y = chunk.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, sx & 15, sz & 15);
+            int y = generator.getBaseHeight(
+                    sx, sz, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, level, randomState);
             if (Math.abs(y - centerY) > MAX_FLATNESS_VARIANCE) return false;
         }
         return true;

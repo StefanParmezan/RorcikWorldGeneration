@@ -22,12 +22,9 @@ public class RwgConfig {
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> BLACKLISTED_BIOMES = BUILDER
             .comment("Biomes completely excluded from generation (also filters biome_zoning).")
             .defineList("blacklisted_biomes", Arrays.asList(
-                    "minecraft:ocean", "minecraft:deep_ocean", "minecraft:frozen_ocean", "minecraft:deep_frozen_ocean",
-                    "minecraft:cold_ocean", "minecraft:deep_cold_ocean", "minecraft:lukewarm_ocean",
-                    "minecraft:deep_lukewarm_ocean", "minecraft:warm_ocean",
                     "minecraft:mushroom_fields", "minecraft:jungle", "minecraft:sparse_jungle",
                     "minecraft:bamboo_jungle", "minecraft:mangrove_swamp", "minecraft:swamp",
-                    "minecraft:ice_spikes", "minecraft:cherry_grove", "minecraft:deep_dark", "minecraft:lush_caves", "minecraft:beach"
+                    "minecraft:ice_spikes", "minecraft:cherry_grove", "minecraft:deep_dark", "minecraft:lush_caves"
             ), obj -> obj instanceof String);
 
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> PHYSICS_AFFECTED_BLOCKS = BUILDER
@@ -65,12 +62,25 @@ public class RwgConfig {
 
     public static final ForgeConfigSpec.BooleanValue BIOME_ZONING_ENABLED;
     public static final ForgeConfigSpec.BooleanValue RESTORE_VANILLA_OCEANS;
+    public static final ForgeConfigSpec.BooleanValue RESTORE_VANILLA_RIVERS;
 
     public static final ForgeConfigSpec.BooleanValue DISABLE_LSO_SUN_FERN;
     public static final ForgeConfigSpec.BooleanValue DISABLE_LSO_ICE_FERN;
     public static final ForgeConfigSpec.BooleanValue DISABLE_LSO_WATER_PLANT;
 
     public static final java.util.Set<String> ZONED_BIOME_IDS = new java.util.LinkedHashSet<>();
+
+    private static final List<String> VANILLA_OCEAN_BIOMES = List.of(
+            "minecraft:ocean", "minecraft:deep_ocean",
+            "minecraft:frozen_ocean", "minecraft:deep_frozen_ocean",
+            "minecraft:cold_ocean", "minecraft:deep_cold_ocean",
+            "minecraft:lukewarm_ocean", "minecraft:deep_lukewarm_ocean",
+            "minecraft:warm_ocean"
+    );
+
+    private static final List<String> VANILLA_RIVER_BIOMES = List.of(
+            "minecraft:river", "minecraft:frozen_river"
+    );
 
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> EXTREME_COLD_INLAND, EXTREME_COLD_HILLS, EXTREME_COLD_COAST, EXTREME_COLD_OCEAN;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> COLD_INLAND, COLD_HILLS, COLD_COAST, COLD_OCEAN;
@@ -147,6 +157,11 @@ public class RwgConfig {
                 "When true, ocean/deep_ocean zones from biome_zoning are ignored and vanilla oceans (with their structures/features) are used.",
                 "The continents spline in overworld.json still controls how much ocean exists."
         ).define("restore_vanilla_oceans", true);
+        RESTORE_VANILLA_RIVERS = BUILDER.comment(
+                "Restore vanilla river biomes in river climate bands.",
+                "When true, river zones from biome_zoning are ignored and vanilla rivers are used.",
+                "The continents/weirdness noise still controls where rivers exist."
+        ).define("restore_vanilla_rivers", true);
         BUILDER.pop();
 
         BUILDER.push("biome_zoning");
@@ -308,7 +323,8 @@ public class RwgConfig {
     public static boolean enableLogging;
     public static boolean suppressDensityWarnings;
     public static boolean biomeZoningEnabled;
-    public static boolean restoreVanillaOceans;
+    public static boolean restoreVanillaOceans = true;
+    public static boolean restoreVanillaRivers = true;
 
     public static boolean disableLsoSunFern;
     public static boolean disableLsoIceFern;
@@ -323,11 +339,24 @@ public class RwgConfig {
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
         restoreVanillaOceans = RESTORE_VANILLA_OCEANS.get();
+        restoreVanillaRivers = RESTORE_VANILLA_RIVERS.get();
 
         List<String> effectiveBlacklist = new ArrayList<>();
         for (String id : BLACKLISTED_BIOMES.get()) {
-            if (restoreVanillaOceans && isOceanBiome(id)) continue;
+            if (restoreVanillaOceans && (isOceanBiome(id) || "minecraft:beach".equals(id))) continue;
+            if (restoreVanillaRivers && isRiverBiome(id)) continue;
             effectiveBlacklist.add(id);
+        }
+        if (!restoreVanillaOceans) {
+            for (String id : VANILLA_OCEAN_BIOMES) {
+                if (!effectiveBlacklist.contains(id)) effectiveBlacklist.add(id);
+            }
+            if (!effectiveBlacklist.contains("minecraft:beach")) effectiveBlacklist.add("minecraft:beach");
+        }
+        if (!restoreVanillaRivers) {
+            for (String id : VANILLA_RIVER_BIOMES) {
+                if (!effectiveBlacklist.contains(id)) effectiveBlacklist.add(id);
+            }
         }
         blacklistedBiomes = effectiveBlacklist;
 
@@ -400,6 +429,7 @@ public class RwgConfig {
         ZONED_BIOME_IDS.clear();
         for (Map.Entry<String, List<? extends String>> entry : ZONE_BIOMES.entrySet()) {
             if (restoreVanillaOceans && isOceanZone(entry.getKey())) continue;
+            if (restoreVanillaRivers && isRiverZone(entry.getKey())) continue;
 
             List<? extends String> list = entry.getValue();
             if (list == null) continue;
@@ -417,6 +447,14 @@ public class RwgConfig {
 
     public static boolean isOceanZone(String zoneKey) {
         return zoneKey != null && (zoneKey.endsWith(".ocean") || zoneKey.endsWith(".deep_ocean"));
+    }
+
+    public static boolean isRiverBiome(String id) {
+        return id != null && id.endsWith("river");
+    }
+
+    public static boolean isRiverZone(String zoneKey) {
+        return zoneKey != null && zoneKey.startsWith("river.");
     }
 
     @SafeVarargs
@@ -498,6 +536,7 @@ public class RwgConfig {
         String idStr = biomeId.toString();
 
         if (isOceanBiome(idStr)) return false;
+        if (isRiverBiome(idStr)) return false;
 
         if (blacklistedBiomes != null && blacklistedBiomes.contains(idStr)) {
             return false;

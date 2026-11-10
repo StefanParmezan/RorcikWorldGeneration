@@ -9,11 +9,13 @@
     "BiomeMixin",
     "ChunkAccessMixin",
     "CountPlacementAccessor",
+    "LevelChunkSectionAccessor",
     "MinecraftServerMixin",
     "OreConfigurationMixin",
     "OverworldBiomeBuilderMixin",
     "PlacedFeatureMixin",
-    "StructureMixin"
+    "StructureMixin",
+    "ChunkGeneratorMixin"
   ],
   "client": [],
   "injectors": {

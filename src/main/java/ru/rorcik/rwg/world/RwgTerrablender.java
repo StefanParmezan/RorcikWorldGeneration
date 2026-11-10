@@ -151,10 +151,13 @@ public class RwgTerrablender {
         private static final Climate.Parameter FULL_RANGE   = Climate.Parameter.span(-1.0f,  1.0f);
         private static final Climate.Parameter DEEP_OCEAN   = Climate.Parameter.span(-1.0f, -0.45f);
         private static final Climate.Parameter OCEAN        = Climate.Parameter.span(-0.45f, -0.19f);
-        private static final Climate.Parameter COAST        = Climate.Parameter.span(-0.19f, -0.11f);
-        private static final Climate.Parameter INLAND       = Climate.Parameter.span(-0.11f,  0.3f);
+        private static final Climate.Parameter COAST        = Climate.Parameter.span(-0.19f,  0.03f);
+        private static final Climate.Parameter INLAND       = Climate.Parameter.span( 0.03f,  0.3f);
         private static final Climate.Parameter HILLS        = Climate.Parameter.span( 0.3f,  1.0f);
-        private static final Climate.Parameter RIVER_WEIRDNESS = Climate.Parameter.span(-0.24f, 0.24f);
+        private static final Climate.Parameter RIVER_WEIRDNESS = Climate.Parameter.span(-0.05f, 0.05f);
+        private static final Climate.Parameter LAND_WEIRDNESS_LOW = Climate.Parameter.span(-1.0f, -0.05f);
+        private static final Climate.Parameter LAND_WEIRDNESS_HIGH = Climate.Parameter.span(0.05f, 1.0f);
+        private static final Climate.Parameter RIVER_CONTINENTALNESS = Climate.Parameter.span(-0.19f, 1.0f);
         private static final float HUMIDITY_MIN = -1.0f;
         private static final float HUMIDITY_MAX =  1.0f;
 
@@ -186,6 +189,9 @@ public class RwgTerrablender {
                 if (RwgConfig.restoreVanillaOceans && RwgConfig.isOceanZone(zoneKey)) {
                     continue;
                 }
+                if (RwgConfig.restoreVanillaRivers && RwgConfig.isRiverZone(zoneKey)) {
+                    continue;
+                }
 
                 if (zoneKey.startsWith("river.")) {
                     placed += addRivers(zoneKey, biomeIds, registry, mapper);
@@ -212,14 +218,8 @@ public class RwgTerrablender {
                 skipped += counts[1];
             }
 
-            mapper.accept(Pair.of(
-                    Climate.parameters(NEUTRAL, Climate.Parameter.span(0.9f, 1.0f), INLAND, FULL_RANGE, FULL_RANGE, FULL_RANGE, 0.0f),
-                    RwgBiomes.PLAINS_CITY
-            ));
-            mapper.accept(Pair.of(
-                    Climate.parameters(HOT, Climate.Parameter.span(0.9f, 1.0f), INLAND, FULL_RANGE, FULL_RANGE, FULL_RANGE, 0.0f),
-                    RwgBiomes.DESERT_CITY
-            ));
+            addSurfaceBiomes(mapper, NEUTRAL, Climate.Parameter.span(0.9f, 1.0f), INLAND, RwgBiomes.PLAINS_CITY);
+            addSurfaceBiomes(mapper, HOT, Climate.Parameter.span(0.9f, 1.0f), INLAND, RwgBiomes.DESERT_CITY);
 
             if (RwgConfig.enableLogging) {
                 LOG.info("Info: Biome zoning applied: {} entries placed, {} skipped.", placed, skipped);
@@ -232,7 +232,7 @@ public class RwgTerrablender {
             if (n == 1) {
                 ResourceKey<Biome> key = resolveBiome(registry, biomeIds.get(0));
                 if (key == null) return new int[]{0, 1};
-                mapper.accept(Pair.of(Climate.parameters(temp, FULL_RANGE, cont, FULL_RANGE, FULL_RANGE, FULL_RANGE, 0.0f), key));
+                addSurfaceBiomes(mapper, temp, FULL_RANGE, cont, key);
                 return new int[]{1, 0};
             }
             float step = (HUMIDITY_MAX - HUMIDITY_MIN) / n;
@@ -245,10 +245,22 @@ public class RwgTerrablender {
                 float lo = HUMIDITY_MIN + i * step;
                 float hi = (i == n - 1) ? HUMIDITY_MAX : (lo + step);
                 Climate.Parameter humidity = Climate.Parameter.span(lo, hi);
-                mapper.accept(Pair.of(Climate.parameters(temp, humidity, cont, FULL_RANGE, FULL_RANGE, FULL_RANGE, 0.0f), key));
+                addSurfaceBiomes(mapper, temp, humidity, cont, key);
                 placed++;
             }
             return new int[]{placed, skipped};
+        }
+
+        private void addSurfaceBiomes(Consumer<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> mapper,
+                                      Climate.Parameter temp, Climate.Parameter humidity,
+                                      Climate.Parameter cont, ResourceKey<Biome> key) {
+            Climate.Parameter[] depths = {Climate.Parameter.point(0.0f), Climate.Parameter.point(1.0f)};
+            Climate.Parameter[] weirdnesses = {LAND_WEIRDNESS_LOW, LAND_WEIRDNESS_HIGH};
+            for (Climate.Parameter depth : depths) {
+                for (Climate.Parameter weirdness : weirdnesses) {
+                    mapper.accept(Pair.of(Climate.parameters(temp, humidity, cont, FULL_RANGE, depth, weirdness, 0.0f), key));
+                }
+            }
         }
 
         private int addRivers(String zoneKey, List<? extends String> biomeIds, Registry<Biome> registry, Consumer<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> mapper) {
@@ -265,11 +277,14 @@ public class RwgTerrablender {
                 return 0;
             }
             int placed = 0;
+            Climate.Parameter[] depths = {Climate.Parameter.point(0.0f), Climate.Parameter.point(1.0f)};
             for (Climate.Parameter t : temps) {
                 for (String id : biomeIds) {
                     ResourceKey<Biome> key = resolveBiome(registry, id);
                     if (key == null) continue;
-                    mapper.accept(Pair.of(Climate.parameters(t, FULL_RANGE, FULL_RANGE, FULL_RANGE, RIVER_WEIRDNESS, Climate.Parameter.point(0.0f), 0.0f), key));
+                    for (Climate.Parameter depth : depths) {
+                        mapper.accept(Pair.of(Climate.parameters(t, FULL_RANGE, RIVER_CONTINENTALNESS, FULL_RANGE, depth, RIVER_WEIRDNESS, 0.0f), key));
+                    }
                     placed++;
                 }
             }
