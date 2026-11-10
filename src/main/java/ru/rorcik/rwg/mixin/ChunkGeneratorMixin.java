@@ -15,8 +15,8 @@ import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.PalettedContainer;
 import net.minecraft.world.level.chunk.PalettedContainerRO;
-import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.StructureManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -25,8 +25,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ChunkGenerator.class)
 public abstract class ChunkGeneratorMixin {
 
+    private static final int WATER_CELL_THRESHOLD = 8;
+
     @Inject(method = "applyBiomeDecoration", at = @At("HEAD"))
-    private void rwg$replaceLandBiomesOverWater(
+    private void rwg$replaceWaterBiomes(
             WorldGenLevel level, ChunkAccess chunk, StructureManager structureManager, CallbackInfo ci) {
 
         Registry<Biome> biomeRegistry = level.registryAccess().registryOrThrow(Registries.BIOME);
@@ -37,35 +39,59 @@ public abstract class ChunkGeneratorMixin {
         Holder<Biome> savanna = biomeRegistry.getHolderOrThrow(Biomes.SAVANNA);
         Holder<Biome> desert = biomeRegistry.getHolderOrThrow(Biomes.DESERT);
 
-        for (int x = 0; x < 16; x++) {
-            for (int z = 0; z < 16; z++) {
-                int top = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1;
-                if (top < chunk.getMinBuildHeight()) continue;
+        int minY = chunk.getMinBuildHeight();
 
-                BlockState topState = chunk.getBlockState(new BlockPos(x, top, z));
-                while (top >= chunk.getMinBuildHeight() && topState.isAir()) {
-                    top--;
-                    topState = chunk.getBlockState(new BlockPos(x, top, z));
+        for (int cellX = 0; cellX < 4; cellX++) {
+            for (int cellZ = 0; cellZ < 4; cellZ++) {
+                int waterColumns = 0;
+                int waterDepth = 0;
+                int topY = minY;
+
+                for (int x = cellX * 4; x < cellX * 4 + 4; x++) {
+                    for (int z = cellZ * 4; z < cellZ * 4 + 4; z++) {
+                        int top = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1;
+                        if (top < minY) continue;
+
+                        BlockState state = chunk.getBlockState(new BlockPos(x, top, z));
+                        while (top >= minY && state.isAir()) {
+                            top--;
+                            state = chunk.getBlockState(new BlockPos(x, top, z));
+                        }
+                        if (state.getFluidState().isEmpty()) continue;
+
+                        waterColumns++;
+                        topY = Math.max(topY, top);
+                        int depth = 0;
+                        for (int y = top; y >= minY; y--) {
+                            if (chunk.getBlockState(new BlockPos(x, y, z)).getFluidState().isEmpty()) break;
+                            depth++;
+                        }
+                        waterDepth += depth;
+                    }
                 }
+
+                boolean waterCell = waterColumns >= WATER_CELL_THRESHOLD;
+                int middleX = cellX * 4 + 2;
+                int middleZ = cellZ * 4 + 2;
+                int middleTop = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, middleX, middleZ) - 1;
+                if (middleTop < minY) middleTop = topY;
+                if (middleTop < minY) continue;
 
                 Holder<Biome> current = chunk.getNoiseBiome(
-                        QuartPos.fromBlock(x), QuartPos.fromBlock(top), QuartPos.fromBlock(z));
+                        QuartPos.fromBlock(middleX), QuartPos.fromBlock(middleTop), QuartPos.fromBlock(middleZ));
 
-                boolean water = !topState.getFluidState().isEmpty();
-                if (water) {
+                if (waterCell) {
                     if (rwg$isWaterBiome(current)) continue;
-
-                    int depth = 0;
-                    for (int y = top; y >= chunk.getMinBuildHeight(); y--) {
-                        if (chunk.getBlockState(new BlockPos(x, y, z)).getFluidState().isEmpty()) break;
-                        depth++;
+                    int averageDepth = Math.max(1, waterDepth / Math.max(1, waterColumns));
+                    Holder<Biome> replacement = averageDepth <= 3 ? river : ocean;
+                    int floor = Math.max(minY, topY - 8);
+                    for (int y = topY; y >= floor; y -= 4) {
+                        rwg$setBiome(chunk, middleX, y, middleZ, replacement);
                     }
-                    rwg$setBiome(chunk, x, top, z, depth <= 3 ? river : ocean);
-                    continue;
+                } else if (rwg$isWaterOnlyBiome(current)) {
+                    Holder<Biome> replacement = rwg$landFor(current, plains, snowyPlains, savanna, desert);
+                    rwg$setBiome(chunk, middleX, middleTop, middleZ, replacement);
                 }
-
-                if (!rwg$isWaterOnlyBiome(current)) continue;
-                rwg$setBiome(chunk, x, top, z, rwg$landFor(current, plains, snowyPlains, savanna, desert));
             }
         }
     }
@@ -85,8 +111,7 @@ public abstract class ChunkGeneratorMixin {
         String id = current.unwrapKey()
                 .map(key -> key.location().getPath())
                 .orElse("");
-        if (id.contains("frozen")) return snowyPlains;
-        if (id.contains("cold")) return snowyPlains;
+        if (id.contains("frozen") || id.contains("cold")) return snowyPlains;
         if (id.contains("lukewarm") || id.contains("warm")) return savanna;
         if (id.contains("desert") || id.contains("badlands")) return desert;
         return plains;
@@ -97,7 +122,7 @@ public abstract class ChunkGeneratorMixin {
     }
 
     private static boolean rwg$isWaterBiome(Holder<Biome> biome) {
-        if (biome.is(BiomeTags.IS_OCEAN) || biome.is(BiomeTags.IS_RIVER)) return true;
+        if (rwg$isWaterOnlyBiome(biome)) return true;
 
         String id = biome.unwrapKey()
                 .map(key -> key.location().getPath())
