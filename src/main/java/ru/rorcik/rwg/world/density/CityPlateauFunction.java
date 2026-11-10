@@ -13,12 +13,18 @@ public class CityPlateauFunction implements DensityFunction {
     private final DensityFunction originalDensity;
     private final int blendDistance;
     private final double plateauScale;
+    /**
+     * Additional height bias. {@code initial_density_without_jaggedness} uses a
+     * negative value so the aquifer water table stays below the real surface.
+     */
+    private final double heightOffset;
 
     public static final Codec<CityPlateauFunction> DIRECT_CODEC = RecordCodecBuilder.create(instance ->
             instance.group(
                     DensityFunction.HOLDER_HELPER_CODEC.fieldOf("argument").forGetter(f -> f.originalDensity),
                     Codec.INT.optionalFieldOf("blend_distance", 64).forGetter(f -> f.blendDistance),
-                    Codec.DOUBLE.optionalFieldOf("plateau_scale", 8.0).forGetter(f -> f.plateauScale)
+                    Codec.DOUBLE.optionalFieldOf("plateau_scale", 8.0).forGetter(f -> f.plateauScale),
+                    Codec.DOUBLE.optionalFieldOf("height_offset", 0.0).forGetter(f -> f.heightOffset)
             ).apply(instance, CityPlateauFunction::new)
     );
 
@@ -26,9 +32,14 @@ public class CityPlateauFunction implements DensityFunction {
             KeyDispatchDataCodec.of(DIRECT_CODEC);
 
     public CityPlateauFunction(DensityFunction originalDensity, int blendDistance, double plateauScale) {
+        this(originalDensity, blendDistance, plateauScale, 0.0);
+    }
+
+    public CityPlateauFunction(DensityFunction originalDensity, int blendDistance, double plateauScale, double heightOffset) {
         this.originalDensity = originalDensity;
         this.blendDistance = blendDistance;
         this.plateauScale = plateauScale;
+        this.heightOffset = heightOffset;
     }
 
     @Override
@@ -50,7 +61,7 @@ public class CityPlateauFunction implements DensityFunction {
 
         if (zone != null) {
             
-            return computePlateauDensity(y, zone.targetHeight());
+            return computePlateauDensity(y, zone.targetHeight() + heightOffset);
         }
 
         GlobalCityRegistry.CityBounds nearestCity = GlobalCityRegistry.findNearestCity(x, z, blendDistance);
@@ -70,7 +81,7 @@ public class CityPlateauFunction implements DensityFunction {
 
         int cityTargetHeight = nearestCity.info().targetHeight();
         double slopeNoise = getSlopeNoise(x, z) * blendFactor * (1.0 - blendFactor) * 8.0;
-        double effectiveCityHeight = cityTargetHeight + slopeNoise;
+        double effectiveCityHeight = cityTargetHeight + heightOffset + slopeNoise;
 
         double naturalHeight = estimateNaturalHeight(context, effectiveCityHeight);
 
@@ -156,7 +167,8 @@ public class CityPlateauFunction implements DensityFunction {
         return visitor.apply(new CityPlateauFunction(
                 originalDensity.mapAll(visitor),
                 blendDistance,
-                plateauScale
+                plateauScale,
+                heightOffset
         ));
     }
 
@@ -170,7 +182,7 @@ public class CityPlateauFunction implements DensityFunction {
         return 64.0;
     }
 
-    private double computePlateauDensity(int y, int targetHeight) {
+    private double computePlateauDensity(int y, double targetHeight) {
         return (targetHeight - y) / plateauScale;
     }
 }

@@ -79,6 +79,8 @@ public class RwgTerrablender {
 
             for (Map.Entry<String, List<? extends String>> entry : RwgConfig.ZONE_BIOMES.entrySet()) {
                 String zoneKey = entry.getKey();
+                if (RwgConfig.restoreVanillaOceans && RwgConfig.isOceanZone(zoneKey)) continue;
+
                 List<? extends String> biomeIds = entry.getValue();
                 if (biomeIds == null || biomeIds.isEmpty()) continue;
 
@@ -150,7 +152,7 @@ public class RwgTerrablender {
         private static final Climate.Parameter DEEP_OCEAN   = Climate.Parameter.span(-1.0f, -0.45f);
         private static final Climate.Parameter OCEAN        = Climate.Parameter.span(-0.45f, -0.19f);
         private static final Climate.Parameter COAST        = Climate.Parameter.span(-0.19f, -0.11f);
-        private static final Climate.Parameter INLAND       = Climate.Parameter.span( 0.03f,  0.3f);
+        private static final Climate.Parameter INLAND       = Climate.Parameter.span(-0.11f,  0.3f);
         private static final Climate.Parameter HILLS        = Climate.Parameter.span( 0.3f,  1.0f);
         private static final Climate.Parameter RIVER_WEIRDNESS = Climate.Parameter.span(-0.24f, 0.24f);
         private static final float HUMIDITY_MIN = -1.0f;
@@ -177,6 +179,13 @@ public class RwgTerrablender {
                 String zoneKey = entry.getKey();
                 List<? extends String> biomeIds = entry.getValue();
                 if (biomeIds == null || biomeIds.isEmpty()) continue;
+
+                // Vanilla oceans are kept in the vanilla biome builder. Adding a
+                // TerraBlender entry for the same climate band would compete with
+                // them and can silently replace the ocean with a land biome.
+                if (RwgConfig.restoreVanillaOceans && RwgConfig.isOceanZone(zoneKey)) {
+                    continue;
+                }
 
                 if (zoneKey.startsWith("river.")) {
                     placed += addRivers(zoneKey, biomeIds, registry, mapper);

@@ -12,7 +12,8 @@
     "MinecraftServerMixin",
     "OreConfigurationMixin",
     "OverworldBiomeBuilderMixin",
-    "PlacedFeatureMixin"
+    "PlacedFeatureMixin",
+    "StructureMixin"
   ],
   "client": [],
   "injectors": {

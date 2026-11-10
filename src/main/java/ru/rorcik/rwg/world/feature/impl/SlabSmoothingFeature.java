@@ -9,12 +9,12 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
-import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import ru.rorcik.rwg.RwgBlocks;
 import ru.rorcik.rwg.world.feature.util.DoublePlantHelper;
+import ru.rorcik.rwg.world.feature.util.SurfaceFinder;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -154,10 +154,11 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     private BlockPos findGround(WorldGenLevel level, int x, int z) {
-        int startY = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z);
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(x, startY, z);
+        int startY = SurfaceFinder.findSurfaceY(level, x, z);
+        if (startY == Integer.MIN_VALUE) return null;
 
-        for (int i = 0; i < 6; i++) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(x, startY, z);
+        for (int i = 0; i < 6 && pos.getY() >= level.getMinBuildHeight(); i++) {
             BlockState s = level.getBlockState(pos);
             if (isWaterloggedSlab(s)) return pos.immutable();
             if (getSlabStateFor(s) != null) return pos.immutable();

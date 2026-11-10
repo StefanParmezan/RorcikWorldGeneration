@@ -43,6 +43,15 @@ public class GlobalCityRegistry {
         return CITY_CHUNKS.get(key);
     }
 
+    public static boolean isRegistered(int centerX, int centerZ) {
+        for (CityBounds city : CITIES) {
+            if (city.centerX() == centerX && city.centerZ() == centerZ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static CityBounds findNearestCity(int blockX, int blockZ, int maxDistance) {
         CityBounds nearest = null;
         double minDist = maxDistance;

@@ -64,6 +64,7 @@ public class RwgConfig {
     public static final ForgeConfigSpec.BooleanValue SUPPRESS_DENSITY_WARNINGS;
 
     public static final ForgeConfigSpec.BooleanValue BIOME_ZONING_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue RESTORE_VANILLA_OCEANS;
 
     public static final ForgeConfigSpec.BooleanValue DISABLE_LSO_SUN_FERN;
     public static final ForgeConfigSpec.BooleanValue DISABLE_LSO_ICE_FERN;
@@ -138,6 +139,14 @@ public class RwgConfig {
         DISABLE_LSO_SUN_FERN = BUILDER.comment("Remove sun fern generation from Legendary Survival Overhaul.").define("disableLsoSunFern", true);
         DISABLE_LSO_ICE_FERN = BUILDER.comment("Remove ice fern generation from Legendary Survival Overhaul.").define("disableLsoIceFern", true);
         DISABLE_LSO_WATER_PLANT = BUILDER.comment("Remove water plant generation from Legendary Survival Overhaul.").define("disableLsoWaterPlant", true);
+        BUILDER.pop();
+
+        BUILDER.push("worldgen");
+        RESTORE_VANILLA_OCEANS = BUILDER.comment(
+                "Restore vanilla ocean biomes in ocean climate bands.",
+                "When true, ocean/deep_ocean zones from biome_zoning are ignored and vanilla oceans (with their structures/features) are used.",
+                "The continents spline in overworld.json still controls how much ocean exists."
+        ).define("restore_vanilla_oceans", true);
         BUILDER.pop();
 
         BUILDER.push("biome_zoning");
@@ -299,6 +308,7 @@ public class RwgConfig {
     public static boolean enableLogging;
     public static boolean suppressDensityWarnings;
     public static boolean biomeZoningEnabled;
+    public static boolean restoreVanillaOceans;
 
     public static boolean disableLsoSunFern;
     public static boolean disableLsoIceFern;
@@ -312,7 +322,15 @@ public class RwgConfig {
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
-        blacklistedBiomes = BLACKLISTED_BIOMES.get();
+        restoreVanillaOceans = RESTORE_VANILLA_OCEANS.get();
+
+        List<String> effectiveBlacklist = new ArrayList<>();
+        for (String id : BLACKLISTED_BIOMES.get()) {
+            if (restoreVanillaOceans && isOceanBiome(id)) continue;
+            effectiveBlacklist.add(id);
+        }
+        blacklistedBiomes = effectiveBlacklist;
+
         physicsAffectedBlocks = PHYSICS_AFFECTED_BLOCKS.get();
         highwaySpawnChance = HIGHWAY_SPAWN_CHANCE.get();
         applyJoinWorldSpawnMixin = APPLY_JOIN_WORLD_SPAWN_MIXIN.get();
@@ -380,7 +398,10 @@ public class RwgConfig {
         putAll(PATCH_KIND_MAP, "red_sandy", PATCH_KIND_RED_SANDY, "sandy", PATCH_KIND_SANDY, "stone", PATCH_KIND_STONE, "skip", PATCH_KIND_SKIP);
 
         ZONED_BIOME_IDS.clear();
-        for (java.util.List<? extends String> list : ZONE_BIOMES.values()) {
+        for (Map.Entry<String, List<? extends String>> entry : ZONE_BIOMES.entrySet()) {
+            if (restoreVanillaOceans && isOceanZone(entry.getKey())) continue;
+
+            List<? extends String> list = entry.getValue();
             if (list == null) continue;
             for (String id : list) {
                 if (id != null && !id.isEmpty() && !id.startsWith("#")) {
@@ -388,6 +409,14 @@ public class RwgConfig {
                 }
             }
         }
+    }
+
+    public static boolean isOceanBiome(String id) {
+        return id != null && id.endsWith("ocean");
+    }
+
+    public static boolean isOceanZone(String zoneKey) {
+        return zoneKey != null && (zoneKey.endsWith(".ocean") || zoneKey.endsWith(".deep_ocean"));
     }
 
     @SafeVarargs
@@ -467,6 +496,8 @@ public class RwgConfig {
     public static boolean isAllowedSpawnBiome(ResourceLocation biomeId) {
         if (biomeId == null) return false;
         String idStr = biomeId.toString();
+
+        if (isOceanBiome(idStr)) return false;
 
         if (blacklistedBiomes != null && blacklistedBiomes.contains(idStr)) {
             return false;

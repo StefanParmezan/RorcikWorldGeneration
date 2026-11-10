@@ -10,6 +10,7 @@ import ru.rorcik.core.zone.ZoneRules;
 import ru.rorcik.rwg.RwgConfig;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -18,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class CityZoneCache extends SavedData {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final String DATA_NAME = "rwg_city_zone_cache";
+    private static final int DEFAULT_TARGET_HEIGHT = 64;
     private final Map<Long, CityZoneInfo> chunkZoneMap = new ConcurrentHashMap<>();
     private final List<CityZoneInfo> allZones = new ArrayList<>();
 
@@ -32,11 +34,17 @@ public class CityZoneCache extends SavedData {
         var zonesList = tag.getList("zones", Tag.TAG_COMPOUND);
         for (int i = 0; i < zonesList.size(); i++) {
             CompoundTag zoneTag = zonesList.getCompound(i);
+            int targetHeight = zoneTag.contains("targetHeight", Tag.TAG_INT)
+                    ? zoneTag.getInt("targetHeight")
+                    : DEFAULT_TARGET_HEIGHT;
+            if (targetHeight <= 0 || targetHeight > 320) {
+                targetHeight = DEFAULT_TARGET_HEIGHT;
+            }
             CityZoneInfo info = new CityZoneInfo(
                     zoneTag.getInt("centerX"),
                     zoneTag.getInt("centerZ"),
                     new ZoneRules(zoneTag.getString("id"), zoneTag.getInt("minDist")),
-                    zoneTag.getInt("targetHeight")
+                    targetHeight
             );
             cache.allZones.add(info);
             long[] chunksArray = zoneTag.getLongArray("chunks");
@@ -99,6 +107,20 @@ public class CityZoneCache extends SavedData {
 
     public List<CityZoneInfo> getAllZones() {
         return new ArrayList<>(allZones);
+    }
+
+    /**
+     * Returns the chunk keys that belong to the given zone. Used when restoring
+     * the in-memory {@link GlobalCityRegistry} after a world reload.
+     */
+    public Set<Long> getChunksForZone(CityZoneInfo info) {
+        Set<Long> chunks = new HashSet<>();
+        for (Map.Entry<Long, CityZoneInfo> entry : chunkZoneMap.entrySet()) {
+            if (entry.getValue() == info) {
+                chunks.add(entry.getKey());
+            }
+        }
+        return chunks;
     }
 
     private static long chunkKey(int chunkX, int chunkZ) {
