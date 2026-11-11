@@ -22,6 +22,7 @@ public class RwgConfig {
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> BLACKLISTED_BIOMES = BUILDER
             .comment("Biomes completely excluded from generation (also filters biome_zoning).")
             .defineList("blacklisted_biomes", Arrays.asList(
+                    "minecraft:beach",
                     "minecraft:mushroom_fields", "minecraft:jungle", "minecraft:sparse_jungle",
                     "minecraft:bamboo_jungle", "minecraft:mangrove_swamp", "minecraft:swamp",
                     "minecraft:ice_spikes", "minecraft:cherry_grove", "minecraft:deep_dark", "minecraft:lush_caves"
@@ -63,6 +64,7 @@ public class RwgConfig {
     public static final ForgeConfigSpec.BooleanValue BIOME_ZONING_ENABLED;
     public static final ForgeConfigSpec.BooleanValue RESTORE_VANILLA_OCEANS;
     public static final ForgeConfigSpec.BooleanValue RESTORE_VANILLA_RIVERS;
+    public static final ForgeConfigSpec.BooleanValue ENABLE_WATER_BIOME_FIX;
 
     public static final ForgeConfigSpec.BooleanValue DISABLE_LSO_SUN_FERN;
     public static final ForgeConfigSpec.BooleanValue DISABLE_LSO_ICE_FERN;
@@ -162,6 +164,11 @@ public class RwgConfig {
                 "When true, river zones from biome_zoning are ignored and vanilla rivers are used.",
                 "The continents/weirdness noise still controls where rivers exist."
         ).define("restore_vanilla_rivers", true);
+        ENABLE_WATER_BIOME_FIX = BUILDER.comment(
+                "Correct vanilla biomes that do not match the generated surface.",
+                "Water columns in land biomes become ocean/river; dry ocean/river columns become land.",
+                "Only vanilla biomes and surface sections are changed; city chunks are skipped."
+        ).define("enable_water_biome_fix", true);
         BUILDER.pop();
 
         BUILDER.push("biome_zoning");
@@ -325,6 +332,7 @@ public class RwgConfig {
     public static boolean biomeZoningEnabled;
     public static boolean restoreVanillaOceans = true;
     public static boolean restoreVanillaRivers = true;
+    public static boolean enableWaterBiomeFix = true;
 
     public static boolean disableLsoSunFern;
     public static boolean disableLsoIceFern;
@@ -340,10 +348,11 @@ public class RwgConfig {
     static void onLoad(final ModConfigEvent event) {
         restoreVanillaOceans = RESTORE_VANILLA_OCEANS.get();
         restoreVanillaRivers = RESTORE_VANILLA_RIVERS.get();
+        enableWaterBiomeFix = ENABLE_WATER_BIOME_FIX.get();
 
         List<String> effectiveBlacklist = new ArrayList<>();
         for (String id : BLACKLISTED_BIOMES.get()) {
-            if (restoreVanillaOceans && (isOceanBiome(id) || "minecraft:beach".equals(id))) continue;
+            if (restoreVanillaOceans && isOceanBiome(id)) continue;
             if (restoreVanillaRivers && isRiverBiome(id)) continue;
             effectiveBlacklist.add(id);
         }
@@ -357,6 +366,9 @@ public class RwgConfig {
             for (String id : VANILLA_RIVER_BIOMES) {
                 if (!effectiveBlacklist.contains(id)) effectiveBlacklist.add(id);
             }
+        }
+        if (!effectiveBlacklist.contains("minecraft:beach")) {
+            effectiveBlacklist.add("minecraft:beach");
         }
         blacklistedBiomes = effectiveBlacklist;
 

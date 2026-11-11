@@ -62,7 +62,9 @@ public abstract class StructureMixin {
 
     private static boolean rwg$isOceanStructure(Structure structure) {
         for (Holder<Biome> biome : structure.biomes()) {
-            if (biome.is(BiomeTags.IS_OCEAN) || biome.is(BiomeTags.IS_DEEP_OCEAN)) {
+            if (biome.is(BiomeTags.IS_OCEAN)
+                    || biome.is(BiomeTags.IS_DEEP_OCEAN)
+                    || biome.is(BiomeTags.IS_RIVER)) {
                 return true;
             }
         }

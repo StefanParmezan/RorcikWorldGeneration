@@ -14,6 +14,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
 import net.minecraft.world.level.levelgen.feature.configurations.OreConfiguration;
 import net.minecraft.world.level.levelgen.placement.CountPlacement;
+import net.minecraft.world.level.levelgen.placement.HeightmapPlacement;
 import net.minecraft.world.level.levelgen.placement.PlacementModifier;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.levelgen.placement.RarityFilter;
@@ -25,6 +26,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import ru.rorcik.rwg.RwgConfig;
+import ru.rorcik.rwg.world.feature.impl.RiverVegetationFeature;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,6 +64,17 @@ public abstract class PlacedFeatureMixin {
 
         BlockState topState = level.getBlockState(new BlockPos(x, topY, z));
         if (topState.getFluidState().isEmpty()) return;
+
+        if (feature.value().feature() instanceof RiverVegetationFeature) return;
+
+        boolean heightmapPlaced = false;
+        for (PlacementModifier modifier : placement) {
+            if (modifier instanceof HeightmapPlacement) {
+                heightmapPlaced = true;
+                break;
+            }
+        }
+        if (!heightmapPlaced && pos.getY() < topY - 1) return;
 
         Holder<Biome> biome = level.getBiome(pos);
         if (rwg$isWaterBiome(biome)) return;

@@ -6,6 +6,7 @@ import net.minecraft.core.QuartPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.tags.BiomeTags;
+import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
@@ -16,11 +17,12 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.PalettedContainer;
 import net.minecraft.world.level.chunk.PalettedContainerRO;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.level.StructureManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import ru.rorcik.rwg.RwgConfig;
+import ru.rorcik.rwg.world.city.GlobalCityRegistry;
 
 @Mixin(ChunkGenerator.class)
 public abstract class ChunkGeneratorMixin {
@@ -30,6 +32,9 @@ public abstract class ChunkGeneratorMixin {
     @Inject(method = "applyBiomeDecoration", at = @At("HEAD"))
     private void rwg$replaceWaterBiomes(
             WorldGenLevel level, ChunkAccess chunk, StructureManager structureManager, CallbackInfo ci) {
+
+        if (!RwgConfig.enableWaterBiomeFix) return;
+        if (GlobalCityRegistry.getZone(chunk.getPos().x, chunk.getPos().z) != null) return;
 
         Registry<Biome> biomeRegistry = level.registryAccess().registryOrThrow(Registries.BIOME);
         Holder<Biome> river = biomeRegistry.getHolderOrThrow(Biomes.RIVER);
@@ -70,7 +75,6 @@ public abstract class ChunkGeneratorMixin {
                     }
                 }
 
-                boolean waterCell = waterColumns >= WATER_CELL_THRESHOLD;
                 int middleX = cellX * 4 + 2;
                 int middleZ = cellZ * 4 + 2;
                 int middleTop = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, middleX, middleZ) - 1;
@@ -79,18 +83,16 @@ public abstract class ChunkGeneratorMixin {
 
                 Holder<Biome> current = chunk.getNoiseBiome(
                         QuartPos.fromBlock(middleX), QuartPos.fromBlock(middleTop), QuartPos.fromBlock(middleZ));
+                if (!rwg$isVanilla(current)) continue;
 
+                boolean waterCell = waterColumns >= WATER_CELL_THRESHOLD;
                 if (waterCell) {
                     if (rwg$isWaterBiome(current)) continue;
                     int averageDepth = Math.max(1, waterDepth / Math.max(1, waterColumns));
-                    Holder<Biome> replacement = averageDepth <= 3 ? river : ocean;
-                    int floor = Math.max(minY, topY - 8);
-                    for (int y = topY; y >= floor; y -= 4) {
-                        rwg$setBiome(chunk, middleX, y, middleZ, replacement);
-                    }
+                    rwg$setBiome(chunk, middleX, topY, middleZ, averageDepth <= 3 ? river : ocean);
                 } else if (rwg$isWaterOnlyBiome(current)) {
-                    Holder<Biome> replacement = rwg$landFor(current, plains, snowyPlains, savanna, desert);
-                    rwg$setBiome(chunk, middleX, middleTop, middleZ, replacement);
+                    rwg$setBiome(chunk, middleX, middleTop, middleZ,
+                            rwg$landFor(current, plains, snowyPlains, savanna, desert));
                 }
             }
         }
@@ -115,6 +117,12 @@ public abstract class ChunkGeneratorMixin {
         if (id.contains("lukewarm") || id.contains("warm")) return savanna;
         if (id.contains("desert") || id.contains("badlands")) return desert;
         return plains;
+    }
+
+    private static boolean rwg$isVanilla(Holder<Biome> biome) {
+        return biome.unwrapKey()
+                .map(key -> "minecraft".equals(key.location().getNamespace()))
+                .orElse(false);
     }
 
     private static boolean rwg$isWaterOnlyBiome(Holder<Biome> biome) {

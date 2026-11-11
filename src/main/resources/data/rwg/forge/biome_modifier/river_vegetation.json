@@ -5,6 +5,6 @@
   "step": "vegetal_decoration",
   "biomes": {
     "type": "forge:any",
-    "except": ["rwg:plains_city", "rwg:desert_city", "#minecraft:is_river"]
+    "except": ["rwg:plains_city", "rwg:desert_city"]
   }
 }
