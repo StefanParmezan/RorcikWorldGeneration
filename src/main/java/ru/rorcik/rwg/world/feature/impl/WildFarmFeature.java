@@ -3,6 +3,7 @@ package ru.rorcik.rwg.world.feature.impl;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
@@ -13,6 +14,8 @@ import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import org.slf4j.Logger;
 import ru.rorcik.rwg.RwgConfig;
+import ru.rorcik.rwg.world.feature.util.DoublePlantHelper;
+import ru.rorcik.rwg.world.feature.util.StructureGuard;
 import ru.rorcik.rwg.world.feature.util.SurfaceFinder;
 
 import java.util.ArrayList;
@@ -32,6 +35,8 @@ public class WildFarmFeature extends Feature<NoneFeatureConfiguration> {
         BlockPos origin = context.origin();
         RandomSource random = context.random();
 
+        if (StructureGuard.isInCity(level, origin)) return false;
+
         if (!hasLogged && RwgConfig.enableLogging) {
             LOGGER.info("Info: WildFarmFeature called at {}", origin);
             hasLogged = true;
@@ -43,6 +48,12 @@ public class WildFarmFeature extends Feature<NoneFeatureConfiguration> {
             return false;
         }
 
+        StructureGuard guard = StructureGuard.forArea(level,
+                origin.getX() - 2, origin.getZ() - 2,
+                origin.getX() + 2, origin.getZ() + 2);
+        if (isGuarded(guard, surfacePos, 2)) return false;
+        if (hasTreeAbove(level, surfacePos)) return false;
+
         List<BlockPos> farmBlocks = new ArrayList<>();
         farmBlocks.add(surfacePos);
         for (int[] dir : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
@@ -50,6 +61,8 @@ public class WildFarmFeature extends Feature<NoneFeatureConfiguration> {
             int neighborY = SurfaceFinder.findSurfaceY(level, neighbor.getX(), neighbor.getZ());
             if (Math.abs(neighborY - surfacePos.getY()) <= 1) {
                 BlockPos neighborSurface = new BlockPos(neighbor.getX(), neighborY, neighbor.getZ());
+                if (isGuarded(guard, neighborSurface, 2)) continue;
+                if (hasTreeAbove(level, neighborSurface)) continue;
                 if (isFarmable(level.getBlockState(neighborSurface))) {
                     farmBlocks.add(neighborSurface);
                 }
@@ -60,24 +73,47 @@ public class WildFarmFeature extends Feature<NoneFeatureConfiguration> {
             farmBlocks.remove(farmBlocks.size() - 1);
         }
 
+        int placedCount = 0;
         for (BlockPos pos : farmBlocks) {
-            level.setBlock(pos, Blocks.FARMLAND.defaultBlockState(), 3);
-            BlockState crop = getRandomCrop(random);
             BlockPos abovePos = pos.above();
-            if (level.getBlockState(abovePos).canBeReplaced()) {
-                level.setBlock(abovePos, crop, 3);
+            BlockState aboveState = level.getBlockState(abovePos);
+            if (DoublePlantHelper.isHalf(aboveState)) {
+                DoublePlantHelper.clearWholePlant(level, abovePos, aboveState);
+                aboveState = level.getBlockState(abovePos);
             }
+            if (!aboveState.isAir() && !aboveState.canBeReplaced()) continue;
+
+            level.setBlock(pos, Blocks.FARMLAND.defaultBlockState(), 3);
+            level.setBlock(abovePos, getRandomCrop(random), 3);
+            placedCount++;
         }
 
+        if (placedCount == 0) return false;
+
         if (RwgConfig.enableLogging) {
-            LOGGER.info("Info: Placed wild farm with {} blocks at {}", farmBlocks.size(), surfacePos);
+            LOGGER.info("Info: Placed wild farm with {} blocks at {}", placedCount, surfacePos);
         }
-        return !farmBlocks.isEmpty();
+        return true;
     }
 
     private boolean isFarmable(BlockState state) {
         return state.is(Blocks.GRASS_BLOCK) || state.is(Blocks.DIRT) ||
                 state.is(Blocks.COARSE_DIRT) || state.is(Blocks.PODZOL);
+    }
+
+    private boolean hasTreeAbove(WorldGenLevel level, BlockPos pos) {
+        for (int dy = 1; dy <= 8; dy++) {
+            BlockState state = level.getBlockState(pos.above(dy));
+            if (state.is(BlockTags.LOGS) || state.is(BlockTags.LEAVES)) return true;
+        }
+        return false;
+    }
+
+    private boolean isGuarded(StructureGuard guard, BlockPos pos, int height) {
+        for (int dy = 0; dy <= height; dy++) {
+            if (guard.contains(pos.above(dy))) return true;
+        }
+        return false;
     }
 
     private BlockState getRandomCrop(RandomSource random) {

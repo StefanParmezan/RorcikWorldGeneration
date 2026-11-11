@@ -4,16 +4,21 @@ import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.block.AttachedStemBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.PointedDripstoneBlock;
 import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.StemBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import ru.rorcik.rwg.RwgBlocks;
+import ru.rorcik.rwg.block.QuartzClusterBlock;
 import ru.rorcik.rwg.world.feature.util.DoublePlantHelper;
+import ru.rorcik.rwg.world.feature.util.StructureGuard;
 import ru.rorcik.rwg.world.feature.util.SurfaceFinder;
 
 import java.util.HashMap;
@@ -79,8 +84,13 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
         WorldGenLevel level = context.level();
         BlockPos origin = context.origin();
 
+        if (StructureGuard.isInCity(level, origin)) return false;
+
         int chunkMinX = origin.getX() & ~15;
         int chunkMinZ = origin.getZ() & ~15;
+
+        StructureGuard guard = StructureGuard.forArea(level,
+                chunkMinX, chunkMinZ, chunkMinX + 15, chunkMinZ + 15);
 
         BlockPos[] groundPos = new BlockPos[16 * 16];
         for (int lx = 0; lx < 16; lx++) {
@@ -132,6 +142,7 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
                 if (!shouldPlace) continue;
 
                 BlockPos abovePos = ground.above();
+                if (guard.contains(ground) || guard.contains(abovePos)) continue;
                 BlockState aboveState = level.getBlockState(abovePos);
 
                 if (aboveState.is(BlockTags.LOGS)) continue;
@@ -176,6 +187,12 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
     private boolean canReplaceAbove(WorldGenLevel level, BlockPos pos, BlockState state) {
         if (state.isAir()) return true;
         if (state.is(Blocks.SNOW)) return true;
+
+        if (state.is(BlockTags.CROPS)) return false;
+        if (state.getBlock() instanceof StemBlock) return false;
+        if (state.getBlock() instanceof AttachedStemBlock) return false;
+        if (state.getBlock() instanceof PointedDripstoneBlock) return false;
+        if (state.getBlock() instanceof QuartzClusterBlock) return false;
 
         if (state.is(BlockTags.REPLACEABLE_BY_TREES)) return true;
         if (state.is(BlockTags.SAPLINGS)) return true;

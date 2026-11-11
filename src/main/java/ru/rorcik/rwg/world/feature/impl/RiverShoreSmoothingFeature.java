@@ -17,6 +17,7 @@ import net.minecraft.world.level.material.Fluids;
 import org.slf4j.Logger;
 import ru.rorcik.rwg.RwgBlocks;
 import ru.rorcik.rwg.RwgConfig;
+import ru.rorcik.rwg.world.feature.util.StructureGuard;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -89,12 +90,18 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
 
         WorldGenLevel level = context.level();
         BlockPos origin = context.origin();
+
+        if (StructureGuard.isInCity(level, origin)) return false;
+
         int chunkMinX = origin.getX() & ~15;
         int chunkMinZ = origin.getZ() & ~15;
         int seaLevel = level.getSeaLevel();
         int waterY = seaLevel - 1;
         int placed = 0;
         int waterlogged = 0;
+
+        StructureGuard guard = StructureGuard.forArea(level,
+                chunkMinX, chunkMinZ, chunkMinX + 15, chunkMinZ + 15);
 
         for (int lx = 0; lx < 16; lx++) {
             for (int lz = 0; lz < 16; lz++) {
@@ -138,6 +145,7 @@ public class RiverShoreSmoothingFeature extends Feature<NoneFeatureConfiguration
                 if (level.getBlockState(belowPos).getFluidState().is(Fluids.WATER)) continue;
 
                 BlockPos slabPos = new BlockPos(x, landTopY, z);
+                if (guard.contains(slabPos)) continue;
                 BlockState atSlab = level.getBlockState(slabPos);
                 if (atSlab.getBlock() instanceof SlabBlock) continue;
                 if (!isFullBlockForReplacement(atSlab)) continue;

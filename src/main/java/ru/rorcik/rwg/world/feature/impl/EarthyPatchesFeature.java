@@ -27,6 +27,7 @@ import ru.rorcik.rwg.RwgConfig;
 import ru.rorcik.rwg.block.BuddingDioriteBlock;
 import ru.rorcik.rwg.world.feature.config.ShoreMaterialConfig;
 import ru.rorcik.rwg.world.feature.util.DoublePlantHelper;
+import ru.rorcik.rwg.world.feature.util.StructureGuard;
 import ru.rorcik.rwg.world.feature.util.SurfaceFinder;
 
 import java.util.ArrayList;
@@ -132,6 +133,8 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
         BlockPos origin = context.origin();
         RandomSource random = context.random();
 
+        if (StructureGuard.isInCity(level, origin)) return false;
+
         BlockPos surfacePos = SurfaceFinder.findSurface(level, origin.getX(), origin.getZ());
         BlockState topState = level.getBlockState(surfacePos);
 
@@ -140,6 +143,10 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
         PatchKind kind = pickPatchKind(level, surfacePos);
         if (kind == null) return false;
 
+        StructureGuard guard = StructureGuard.forArea(level,
+                origin.getX() - 4, origin.getZ() - 4,
+                origin.getX() + 4, origin.getZ() + 4);
+
         int waterY = level.getSeaLevel() - 1;
         boolean nearWater    = isNearWater(level, surfacePos);
         boolean atWaterLevel = surfacePos.getY() >= waterY && surfacePos.getY() <= waterY + 2;
@@ -147,20 +154,20 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
         boolean placed = false;
 
         if (nearWater && atWaterLevel) {
-            placed |= placeShorePatch(level, origin, random, kind);
+            placed |= placeShorePatch(level, origin, random, kind, guard);
         } else {
-            placed |= placeSurfacePatch(level, origin, random, kind);
+            placed |= placeSurfacePatch(level, origin, random, kind, guard);
         }
 
         if (nearWater && kind == PatchKind.EARTHY) {
-            placed |= decorateWaterSurface(level, origin, random);
+            placed |= decorateWaterSurface(level, origin, random, guard);
         }
 
         return placed;
     }
 
     private boolean placeSurfacePatch(WorldGenLevel level, BlockPos origin,
-                                      RandomSource random, PatchKind kind) {
+                                      RandomSource random, PatchKind kind, StructureGuard guard) {
         Block patchBlock = pickPatchBlock(kind, random);
 
         int radius = 1;
@@ -177,6 +184,10 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
                 BlockState state = level.getBlockState(pos);
 
                 if (!isValidSurface(state)) continue;
+                if (isNearStructure(guard, pos, 3)) continue;
+                if (state.is(patchBlock)) continue;
+
+                clearPlantsAbove(level, pos);
 
                 level.setBlock(pos, patchBlock.defaultBlockState(), 3);
                 placed++;
@@ -207,7 +218,7 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     private boolean placeShorePatch(WorldGenLevel level, BlockPos origin,
-                                    RandomSource random, PatchKind kind) {
+                                    RandomSource random, PatchKind kind, StructureGuard guard) {
         ShoreMaterialConfig config = shoreConfigFor(kind);
         if (config.isEmpty()) return false;
 
@@ -231,12 +242,13 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
 
                 if (state.getBlock() instanceof SlabBlock) continue;
                 if (!isValidSurface(state)) continue;
+                if (isNearStructure(guard, pos, 2)) continue;
 
                 Block chosen = config.pick(random);
                 if (chosen == null) continue;
                 if (state.is(chosen)) continue;
 
-                clearDoublePlantAbove(level, pos);
+                clearPlantsAbove(level, pos);
 
                 level.setBlock(pos, chosen.defaultBlockState(), 2);
                 placed++;
@@ -247,7 +259,7 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
         return placed > 0;
     }
 
-    private void clearDoublePlantAbove(WorldGenLevel level, BlockPos pos) {
+    private void clearPlantsAbove(WorldGenLevel level, BlockPos pos) {
         BlockPos lower = pos.above();
         BlockPos upper = pos.above(2);
 
@@ -312,7 +324,8 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
         level.setBlock(lower, Blocks.TORCHFLOWER.defaultBlockState(), 3);
     }
 
-    private boolean decorateWaterSurface(WorldGenLevel level, BlockPos origin, RandomSource random) {
+    private boolean decorateWaterSurface(WorldGenLevel level, BlockPos origin,
+                                         RandomSource random, StructureGuard guard) {
         int waterY = level.getSeaLevel() - 1;
         int radius = WATER_RADIUS;
         int placed = 0;
@@ -329,6 +342,7 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
                 if (!waterState.getFluidState().is(Fluids.WATER)) continue;
 
                 BlockPos abovePos = waterPos.above();
+                if (isNearStructure(guard, waterPos, 1)) continue;
                 if (!level.getBlockState(abovePos).isAir()) continue;
 
                 float roll = random.nextFloat();
@@ -690,6 +704,13 @@ public class EarthyPatchesFeature extends Feature<NoneFeatureConfiguration> {
         if (DoublePlantHelper.isHalf(state)) return false;
         if (state.isAir()) return true;
         if (state.canBeReplaced()) return true;
+        return false;
+    }
+
+    private boolean isNearStructure(StructureGuard guard, BlockPos pos, int height) {
+        for (int dy = 0; dy <= height; dy++) {
+            if (guard.contains(pos.above(dy))) return true;
+        }
         return false;
     }
 }

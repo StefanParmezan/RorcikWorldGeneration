@@ -6,9 +6,11 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.block.AttachedStemBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.StemBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.levelgen.feature.Feature;
@@ -16,6 +18,7 @@ import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import ru.rorcik.rwg.RwgConfig;
 import ru.rorcik.rwg.world.feature.util.DoublePlantHelper;
+import ru.rorcik.rwg.world.feature.util.StructureGuard;
 import ru.rorcik.rwg.world.feature.util.SurfaceFinder;
 
 import java.util.ArrayList;
@@ -84,6 +87,8 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
         BlockPos origin = context.origin();
         RandomSource random = context.random();
 
+        if (StructureGuard.isInCity(level, origin)) return false;
+
         BlockPos surfacePos = SurfaceFinder.findSurface(level, origin.getX(), origin.getZ());
         if (!SurfaceFinder.isSolidGround(level, surfacePos)) return false;
         if (isTooSteep(level, surfacePos)) return false;
@@ -91,13 +96,39 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
         BoulderType type = pickBoulderTypeByBiome(level, surfacePos, random);
         int radius = 2 + random.nextInt(2);
 
+        StructureGuard guard = StructureGuard.forArea(level,
+                surfacePos.getX() - radius - 2, surfacePos.getZ() - radius - 2,
+                surfacePos.getX() + radius + 2, surfacePos.getZ() + radius + 2);
+        if (conflictsWithExisting(level, surfacePos, radius, guard)) return false;
+
         List<BlockPos> placed = placeBoulder(level, surfacePos, type, radius, random);
         if (placed.isEmpty()) return false;
 
-        placeCapSlab(level, type, placed, random);
-        smoothBase(level, surfacePos, radius, type);
+        placeCapSlab(level, type, placed, random, guard);
+        smoothBase(level, surfacePos, radius, type, guard);
 
         return true;
+    }
+
+    private boolean conflictsWithExisting(WorldGenLevel level, BlockPos center,
+                                          int radius, StructureGuard guard) {
+        if (guard.intersects(center.getX() - radius, center.getY() - radius, center.getZ() - radius,
+                center.getX() + radius, center.getY() + radius, center.getZ() + radius)) {
+            return true;
+        }
+
+        for (int dy = -radius; dy <= radius; dy++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dz = -radius; dz <= radius; dz++) {
+                    BlockState state = level.getBlockState(center.offset(dx, dy, dz));
+                    if (state.is(BlockTags.LOGS) || state.is(BlockTags.LEAVES)) return true;
+                    if (state.is(Blocks.FARMLAND) || state.is(BlockTags.CROPS)) return true;
+                    if (state.getBlock() instanceof StemBlock
+                            || state.getBlock() instanceof AttachedStemBlock) return true;
+                }
+            }
+        }
+        return false;
     }
 
     private BoulderType pickBoulderTypeByBiome(WorldGenLevel level, BlockPos pos, RandomSource random) {
@@ -211,7 +242,7 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     private void placeCapSlab(WorldGenLevel level, BoulderType type,
-                              List<BlockPos> placed, RandomSource random) {
+                              List<BlockPos> placed, RandomSource random, StructureGuard guard) {
         BlockPos highest = null;
         for (BlockPos p : placed) {
             if (highest == null
@@ -223,6 +254,7 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
         if (highest == null) return;
 
         BlockPos above = highest.above();
+        if (guard.contains(above)) return;
         if (!level.getBlockState(above).isAir()) return;
 
         Block slabBlock = CAP_SLAB.get(type);
@@ -234,7 +266,8 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
         }
     }
 
-    private void smoothBase(WorldGenLevel level, BlockPos center, int radius, BoulderType type) {
+    private void smoothBase(WorldGenLevel level, BlockPos center, int radius,
+                            BoulderType type, StructureGuard guard) {
         Block slabBlock = CAP_SLAB.get(type);
         if (slabBlock == null) return;
 
@@ -245,9 +278,12 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
                 int z = center.getZ() + dz;
 
                 BlockPos surfacePos = SurfaceFinder.findSurface(level, x, z);
+                if (surfacePos.getY() == level.getMinBuildHeight()) continue;
+                if (guard.contains(surfacePos)) continue;
                 BlockState surfaceState = level.getBlockState(surfacePos);
 
                 if (BOULDER_BLOCKS.contains(surfaceState.getBlock())) continue;
+                if (surfaceState.is(Blocks.FARMLAND) || surfaceState.is(BlockTags.CROPS)) continue;
                 if (!surfaceState.isSolid()) continue;
 
                 boolean neighborHigher = false;
@@ -265,6 +301,7 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
                 if (!neighborHigher) continue;
 
                 BlockPos slabPos = surfacePos.above();
+                if (guard.contains(slabPos)) continue;
                 BlockState aboveState = level.getBlockState(slabPos);
                 if (!aboveState.canBeReplaced()) continue;
 
@@ -282,11 +319,13 @@ public class BoulderFeature extends Feature<NoneFeatureConfiguration> {
         if (!state.getFluidState().isEmpty()) return false;
         if (state.is(BlockTags.LOGS)) return false;
         if (state.is(BlockTags.LEAVES)) return false;
-        if (state.is(BlockTags.FLOWERS)) return false;
-        if (state.is(BlockTags.SAPLINGS)) return false;
         if (state.is(Blocks.BEDROCK)) return false;
         if (state.is(Blocks.OBSIDIAN)) return false;
         if (state.is(Blocks.CRYING_OBSIDIAN)) return false;
+        if (state.is(Blocks.FARMLAND)) return false;
+        if (state.is(BlockTags.CROPS)) return false;
+        if (state.getBlock() instanceof StemBlock) return false;
+        if (state.getBlock() instanceof AttachedStemBlock) return false;
         if (state.isAir()) return dy >= 0;
         return true;
     }
