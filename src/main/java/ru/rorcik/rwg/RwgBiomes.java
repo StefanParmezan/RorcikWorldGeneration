@@ -31,7 +31,7 @@ public class RwgBiomes {
                     .specialEffects(new BiomeSpecialEffects.Builder()
                             .waterColor(4159204)
                             .waterFogColor(329011)
-                            .fogColor(5921370)
+                            .fogColor(12638463)
                             .skyColor(7907327)
                             .build())
                     .mobSpawnSettings(MobSpawnSettings.EMPTY)
