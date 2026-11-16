@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import ru.rorcik.rwg.world.city.CityZoneLookup;
 
 import java.util.Optional;
 
@@ -33,10 +34,16 @@ public abstract class StructureMixin {
         Structure self = (Structure) (Object) this;
         Optional<Structure.GenerationStub> result = cir.getReturnValue();
         if (result == null || result.isEmpty()) return;
+
+        BlockPos start = result.get().position();
+        if (CityZoneLookup.isInRandomCity(start.getX(), start.getZ())) {
+            cir.setReturnValue(Optional.empty());
+            return;
+        }
+
         if (self.step() != GenerationStep.Decoration.SURFACE_STRUCTURES) return;
         if (rwg$isOceanStructure(self)) return;
 
-        BlockPos start = result.get().position();
         int surface = context.chunkGenerator().getFirstOccupiedHeight(
                 start.getX(), start.getZ(),
                 Heightmap.Types.WORLD_SURFACE_WG,

@@ -49,6 +49,11 @@ public final class CityZoneLookup {
         return getZoneAtChunk(blockX >> 4, blockZ >> 4) != null;
     }
 
+    public static boolean isInRandomCity(int blockX, int blockZ) {
+        CityZoneProvider provider = CityZoneProviders.getProvider();
+        return provider != null && provider.getZoneAtChunk(blockX >> 4, blockZ >> 4) != null;
+    }
+
     public static double distanceToZone(int blockX, int blockZ, CityZone zone) {
         int dx = Math.max(Math.max(zone.minBlockX() - blockX, 0), blockX - zone.maxBlockX());
         int dz = Math.max(Math.max(zone.minBlockZ() - blockZ, 0), blockZ - zone.maxBlockZ());
