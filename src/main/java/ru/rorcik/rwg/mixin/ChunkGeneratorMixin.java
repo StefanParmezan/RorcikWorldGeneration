@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ru.rorcik.rwg.RwgConfig;
-import ru.rorcik.rwg.world.city.GlobalCityRegistry;
+import ru.rorcik.rwg.world.city.CityZoneLookup;
 
 @Mixin(ChunkGenerator.class)
 public abstract class ChunkGeneratorMixin {
@@ -34,7 +34,7 @@ public abstract class ChunkGeneratorMixin {
             WorldGenLevel level, ChunkAccess chunk, StructureManager structureManager, CallbackInfo ci) {
 
         if (!RwgConfig.enableWaterBiomeFix) return;
-        if (GlobalCityRegistry.getZone(chunk.getPos().x, chunk.getPos().z) != null) return;
+        if (CityZoneLookup.getZoneAtChunk(chunk.getPos().x, chunk.getPos().z) != null) return;
 
         Registry<Biome> biomeRegistry = level.registryAccess().registryOrThrow(Registries.BIOME);
         Holder<Biome> river = biomeRegistry.getHolderOrThrow(Biomes.RIVER);

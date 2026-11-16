@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import ru.rorcik.rwg.RwgBiomes;
 import ru.rorcik.rwg.RwgConfig;
-import ru.rorcik.rwg.world.city.GlobalCityRegistry;
+import ru.rorcik.rwg.world.city.CityZoneLookup;
 
 @Mixin(ChunkAccess.class)
 public abstract class ChunkAccessMixin {
@@ -28,7 +28,7 @@ public abstract class ChunkAccessMixin {
         return (quartX, quartY, quartZ, climateSampler) -> {
             int chunkX = quartX >> 2;
             int chunkZ = quartZ >> 2;
-            GlobalCityRegistry.CityZoneInfo zone = GlobalCityRegistry.getZone(chunkX, chunkZ);
+            ru.rorcik.core.city.CityZone zone = CityZoneLookup.getZoneAtChunk(chunkX, chunkZ);
             if (zone != null) {
                 MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
                 if (server != null) {

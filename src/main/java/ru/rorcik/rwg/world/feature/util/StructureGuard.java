@@ -11,7 +11,7 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructurePiece;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
-import ru.rorcik.rwg.world.city.GlobalCityRegistry;
+import ru.rorcik.rwg.world.city.CityZoneLookup;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -91,6 +91,6 @@ public final class StructureGuard {
 
     public static boolean isInCity(WorldGenLevel level, BlockPos pos) {
         if (!level.getLevel().dimension().equals(Level.OVERWORLD)) return false;
-        return GlobalCityRegistry.getZone(pos.getX() >> 4, pos.getZ() >> 4) != null;
+        return CityZoneLookup.getZoneAtChunk(pos.getX() >> 4, pos.getZ() >> 4) != null;
     }
 }
