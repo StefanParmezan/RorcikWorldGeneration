@@ -65,6 +65,16 @@ public class GlobalCityRegistry {
         return nearest;
     }
 
+    public static CityBounds findCityBoundsAt(int blockX, int blockZ) {
+        for (CityBounds city : CITIES) {
+            if (blockX >= city.minX() && blockX <= city.maxX()
+                    && blockZ >= city.minZ() && blockZ <= city.maxZ()) {
+                return city;
+            }
+        }
+        return null;
+    }
+
     public static double distanceToBoundingBox(int x, int z, CityBounds bb) {
         int dx = Math.max(Math.max(bb.minX() - x, 0), x - bb.maxX());
         int dz = Math.max(Math.max(bb.minZ() - z, 0), z - bb.maxZ());

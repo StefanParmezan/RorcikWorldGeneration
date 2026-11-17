@@ -6,7 +6,8 @@ import net.minecraft.util.KeyDispatchDataCodec;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.blending.Blender;
-import ru.rorcik.rwg.world.city.GlobalCityRegistry;
+import ru.rorcik.core.city.CityZone;
+import ru.rorcik.rwg.world.city.CityZoneLookup;
 
 public class CityPlateauFunction implements DensityFunction {
 
@@ -57,19 +58,19 @@ public class CityPlateauFunction implements DensityFunction {
 
         int chunkX = x >> 4;
         int chunkZ = z >> 4;
-        GlobalCityRegistry.CityZoneInfo zone = GlobalCityRegistry.getZone(chunkX, chunkZ);
+        CityZone zone = CityZoneLookup.getZoneAtChunk(chunkX, chunkZ);
 
         if (zone != null) {
             
             return computePlateauDensity(y, zone.targetHeight() + heightOffset);
         }
 
-        GlobalCityRegistry.CityBounds nearestCity = GlobalCityRegistry.findNearestCity(x, z, blendDistance);
+        CityZone nearestCity = CityZoneLookup.getNearestZone(x, z, blendDistance);
         if (nearestCity == null) {
             return original;
         }
 
-        double distance = GlobalCityRegistry.distanceToBoundingBox(x, z, nearestCity);
+        double distance = CityZoneLookup.distanceToZone(x, z, nearestCity);
         double t = Mth.clamp(distance / blendDistance, 0.0, 1.0);
 
         double smoothT = t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
@@ -79,7 +80,7 @@ public class CityPlateauFunction implements DensityFunction {
             return original;
         }
 
-        int cityTargetHeight = nearestCity.info().targetHeight();
+        int cityTargetHeight = nearestCity.targetHeight();
         double slopeNoise = getSlopeNoise(x, z) * blendFactor * (1.0 - blendFactor) * 8.0;
         double effectiveCityHeight = cityTargetHeight + heightOffset + slopeNoise;
 
