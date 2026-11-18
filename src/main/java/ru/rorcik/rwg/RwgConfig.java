@@ -10,6 +10,8 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.config.ModConfigEvent;
 import net.minecraftforge.registries.ForgeRegistries;
+import ru.rorcik.core.zone.BiomeZoneRegistry;
+import ru.rorcik.core.zone.TemperatureZone;
 
 import java.util.*;
 
@@ -20,9 +22,7 @@ public class RwgConfig {
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> BLACKLISTED_BIOMES = BUILDER
             .comment("Biomes completely excluded from generation (also filters biome_zoning).")
             .defineList("blacklisted_biomes", Arrays.asList(
-                    "minecraft:ocean", "minecraft:deep_ocean", "minecraft:frozen_ocean", "minecraft:deep_frozen_ocean",
-                    "minecraft:cold_ocean", "minecraft:deep_cold_ocean", "minecraft:lukewarm_ocean",
-                    "minecraft:deep_lukewarm_ocean", "minecraft:warm_ocean",
+                    "minecraft:beach",
                     "minecraft:mushroom_fields", "minecraft:jungle", "minecraft:sparse_jungle",
                     "minecraft:bamboo_jungle", "minecraft:mangrove_swamp", "minecraft:swamp",
                     "minecraft:ice_spikes", "minecraft:cherry_grove", "minecraft:deep_dark", "minecraft:lush_caves"
@@ -57,11 +57,32 @@ public class RwgConfig {
     public static final ForgeConfigSpec.DoubleValue FROGSPAWN_INSTANT_CHANCE;
     public static final ForgeConfigSpec.DoubleValue ORE_VEIN_SIZE_MULTIPLIER;
     public static final ForgeConfigSpec.DoubleValue ORE_FREQUENCY_DIVISOR;
+
+    public static final ForgeConfigSpec.BooleanValue ENABLE_LOGGING;
     public static final ForgeConfigSpec.BooleanValue SUPPRESS_DENSITY_WARNINGS;
 
     public static final ForgeConfigSpec.BooleanValue BIOME_ZONING_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue RESTORE_VANILLA_OCEANS;
+    public static final ForgeConfigSpec.BooleanValue RESTORE_VANILLA_RIVERS;
+    public static final ForgeConfigSpec.BooleanValue ENABLE_WATER_BIOME_FIX;
+
+    public static final ForgeConfigSpec.BooleanValue DISABLE_LSO_SUN_FERN;
+    public static final ForgeConfigSpec.BooleanValue DISABLE_LSO_ICE_FERN;
+    public static final ForgeConfigSpec.BooleanValue DISABLE_LSO_WATER_PLANT;
 
     public static final java.util.Set<String> ZONED_BIOME_IDS = new java.util.LinkedHashSet<>();
+
+    private static final List<String> VANILLA_OCEAN_BIOMES = List.of(
+            "minecraft:ocean", "minecraft:deep_ocean",
+            "minecraft:frozen_ocean", "minecraft:deep_frozen_ocean",
+            "minecraft:cold_ocean", "minecraft:deep_cold_ocean",
+            "minecraft:lukewarm_ocean", "minecraft:deep_lukewarm_ocean",
+            "minecraft:warm_ocean"
+    );
+
+    private static final List<String> VANILLA_RIVER_BIOMES = List.of(
+            "minecraft:river", "minecraft:frozen_river"
+    );
 
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> EXTREME_COLD_INLAND, EXTREME_COLD_HILLS, EXTREME_COLD_COAST, EXTREME_COLD_OCEAN;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> COLD_INLAND, COLD_HILLS, COLD_COAST, COLD_OCEAN;
@@ -114,6 +135,7 @@ public class RwgConfig {
         BUILDER.pop();
 
         BUILDER.push("logging");
+        ENABLE_LOGGING = BUILDER.comment("Enable detailed logging for RWG features. Set to false to disable most console output.").define("enable_logging", true);
         SUPPRESS_DENSITY_WARNINGS = BUILDER.define("suppress_density_warnings", true);
         BUILDER.pop();
 
@@ -125,10 +147,32 @@ public class RwgConfig {
         FROGSPAWN_INSTANT_CHANCE = BUILDER.defineInRange("frogspawn_instant_chance", 0.15, 0.0, 1.0);
         BUILDER.pop();
 
+        BUILDER.push("compatibility");
+        DISABLE_LSO_SUN_FERN = BUILDER.comment("Remove sun fern generation from Legendary Survival Overhaul.").define("disableLsoSunFern", true);
+        DISABLE_LSO_ICE_FERN = BUILDER.comment("Remove ice fern generation from Legendary Survival Overhaul.").define("disableLsoIceFern", true);
+        DISABLE_LSO_WATER_PLANT = BUILDER.comment("Remove water plant generation from Legendary Survival Overhaul.").define("disableLsoWaterPlant", true);
+        BUILDER.pop();
+
+        BUILDER.push("worldgen");
+        RESTORE_VANILLA_OCEANS = BUILDER.comment(
+                "Restore vanilla ocean biomes in ocean climate bands.",
+                "When true, ocean/deep_ocean zones from biome_zoning are ignored and vanilla oceans (with their structures/features) are used.",
+                "The continents spline in overworld.json still controls how much ocean exists."
+        ).define("restore_vanilla_oceans", true);
+        RESTORE_VANILLA_RIVERS = BUILDER.comment(
+                "Restore vanilla river biomes in river climate bands.",
+                "When true, river zones from biome_zoning are ignored and vanilla rivers are used.",
+                "The continents/weirdness noise still controls where rivers exist."
+        ).define("restore_vanilla_rivers", true);
+        ENABLE_WATER_BIOME_FIX = BUILDER.comment(
+                "Correct vanilla biomes that do not match the generated surface.",
+                "Water columns in land biomes become ocean/river; dry ocean/river columns become land.",
+                "Only vanilla biomes and surface sections are changed; city chunks are skipped."
+        ).define("enable_water_biome_fix", true);
+        BUILDER.pop();
+
         BUILDER.push("biome_zoning");
-        BIOME_ZONING_ENABLED = BUILDER
-                .comment("Enable explicit biome zoning based on ConcentricTemperature rings.")
-                .define("enabled", true);
+        BIOME_ZONING_ENABLED = BUILDER.comment("Enable explicit biome zoning based on ConcentricTemperature rings.").define("enabled", true);
 
         BUILDER.push("extreme_cold");
         EXTREME_COLD_INLAND = defineBiomeList("inland", "minecraft:snowy_plains");
@@ -282,8 +326,17 @@ public class RwgConfig {
     public static boolean enableEarthyPatchDecorations, enableDeadBushOnPodzol, enableFernOnCoarseDirt, enableMossOnMossyCobblestone;
     public static double frogspawnInstantChance;
     public static double oreVeinSizeMultiplier = 1.0, oreFrequencyDivisor = 1.0;
+
+    public static boolean enableLogging;
     public static boolean suppressDensityWarnings;
     public static boolean biomeZoningEnabled;
+    public static boolean restoreVanillaOceans = true;
+    public static boolean restoreVanillaRivers = true;
+    public static boolean enableWaterBiomeFix = true;
+
+    public static boolean disableLsoSunFern;
+    public static boolean disableLsoIceFern;
+    public static boolean disableLsoWaterPlant;
 
     public static final Map<String, List<? extends String>> ZONE_BIOMES = new LinkedHashMap<>();
     public static final Map<String, List<? extends String>> FEATURE_BIOMES = new LinkedHashMap<>();
@@ -293,7 +346,32 @@ public class RwgConfig {
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
-        blacklistedBiomes = BLACKLISTED_BIOMES.get();
+        restoreVanillaOceans = RESTORE_VANILLA_OCEANS.get();
+        restoreVanillaRivers = RESTORE_VANILLA_RIVERS.get();
+        enableWaterBiomeFix = ENABLE_WATER_BIOME_FIX.get();
+
+        List<String> effectiveBlacklist = new ArrayList<>();
+        for (String id : BLACKLISTED_BIOMES.get()) {
+            if (restoreVanillaOceans && isOceanBiome(id)) continue;
+            if (restoreVanillaRivers && isRiverBiome(id)) continue;
+            effectiveBlacklist.add(id);
+        }
+        if (!restoreVanillaOceans) {
+            for (String id : VANILLA_OCEAN_BIOMES) {
+                if (!effectiveBlacklist.contains(id)) effectiveBlacklist.add(id);
+            }
+            if (!effectiveBlacklist.contains("minecraft:beach")) effectiveBlacklist.add("minecraft:beach");
+        }
+        if (!restoreVanillaRivers) {
+            for (String id : VANILLA_RIVER_BIOMES) {
+                if (!effectiveBlacklist.contains(id)) effectiveBlacklist.add(id);
+            }
+        }
+        if (!effectiveBlacklist.contains("minecraft:beach")) {
+            effectiveBlacklist.add("minecraft:beach");
+        }
+        blacklistedBiomes = effectiveBlacklist;
+
         physicsAffectedBlocks = PHYSICS_AFFECTED_BLOCKS.get();
         highwaySpawnChance = HIGHWAY_SPAWN_CHANCE.get();
         applyJoinWorldSpawnMixin = APPLY_JOIN_WORLD_SPAWN_MIXIN.get();
@@ -314,8 +392,14 @@ public class RwgConfig {
         frogspawnInstantChance = FROGSPAWN_INSTANT_CHANCE.get();
         oreVeinSizeMultiplier = ORE_VEIN_SIZE_MULTIPLIER.get();
         oreFrequencyDivisor = ORE_FREQUENCY_DIVISOR.get();
+
+        enableLogging = ENABLE_LOGGING.get();
         suppressDensityWarnings = SUPPRESS_DENSITY_WARNINGS.get();
         biomeZoningEnabled = BIOME_ZONING_ENABLED.get();
+
+        disableLsoSunFern = DISABLE_LSO_SUN_FERN.get();
+        disableLsoIceFern = DISABLE_LSO_ICE_FERN.get();
+        disableLsoWaterPlant = DISABLE_LSO_WATER_PLANT.get();
 
         ZONE_BIOMES.clear();
         putAll(ZONE_BIOMES,
@@ -355,7 +439,11 @@ public class RwgConfig {
         putAll(PATCH_KIND_MAP, "red_sandy", PATCH_KIND_RED_SANDY, "sandy", PATCH_KIND_SANDY, "stone", PATCH_KIND_STONE, "skip", PATCH_KIND_SKIP);
 
         ZONED_BIOME_IDS.clear();
-        for (java.util.List<? extends String> list : ZONE_BIOMES.values()) {
+        for (Map.Entry<String, List<? extends String>> entry : ZONE_BIOMES.entrySet()) {
+            if (restoreVanillaOceans && isOceanZone(entry.getKey())) continue;
+            if (restoreVanillaRivers && isRiverZone(entry.getKey())) continue;
+
+            List<? extends String> list = entry.getValue();
             if (list == null) continue;
             for (String id : list) {
                 if (id != null && !id.isEmpty() && !id.startsWith("#")) {
@@ -363,6 +451,22 @@ public class RwgConfig {
                 }
             }
         }
+    }
+
+    public static boolean isOceanBiome(String id) {
+        return id != null && id.endsWith("ocean");
+    }
+
+    public static boolean isOceanZone(String zoneKey) {
+        return zoneKey != null && (zoneKey.endsWith(".ocean") || zoneKey.endsWith(".deep_ocean"));
+    }
+
+    public static boolean isRiverBiome(String id) {
+        return id != null && id.endsWith("river");
+    }
+
+    public static boolean isRiverZone(String zoneKey) {
+        return zoneKey != null && zoneKey.startsWith("river.");
     }
 
     @SafeVarargs
@@ -373,6 +477,15 @@ public class RwgConfig {
             ForgeConfigSpec.ConfigValue<List<? extends String>> val = (ForgeConfigSpec.ConfigValue<List<? extends String>>) pairs[i + 1];
             target.put(key, val.get());
         }
+    }
+
+    public static boolean isLsoRemovalEnabled(String key) {
+        return switch (key) {
+            case "sun_fern" -> disableLsoSunFern;
+            case "ice_fern" -> disableLsoIceFern;
+            case "water_plant" -> disableLsoWaterPlant;
+            default -> false;
+        };
     }
 
     public static String boulderTypeFor(ResourceLocation biomeId) {
@@ -432,10 +545,31 @@ public class RwgConfig {
 
     public static boolean isAllowedSpawnBiome(ResourceLocation biomeId) {
         if (biomeId == null) return false;
-        List<? extends String> neutralInland = ZONE_BIOMES.get("neutral.inland");
-        if (neutralInland == null || neutralInland.isEmpty()) {
-            return biomeId.toString().equals("minecraft:plains") || biomeId.toString().equals("minecraft:forest");
+        String idStr = biomeId.toString();
+
+        if (isOceanBiome(idStr)) return false;
+        if (isRiverBiome(idStr)) return false;
+
+        if (blacklistedBiomes != null && blacklistedBiomes.contains(idStr)) {
+            return false;
         }
-        return matchesAny(neutralInland, biomeId);
+
+        Optional<TemperatureZone> zoneOpt = BiomeZoneRegistry.getZone(biomeId);
+
+        if (zoneOpt.isPresent()) {
+            TemperatureZone zone = zoneOpt.get();
+            return zone == TemperatureZone.NEUTRAL || zone == TemperatureZone.COOL || zone == TemperatureZone.WARM;
+        }
+
+        List<? extends String> neutralInland = ZONE_BIOMES.get("neutral.inland");
+        if (neutralInland != null) {
+            for (String allowed : neutralInland) {
+                if (allowed.equals(idStr) || allowed.equals("*")) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

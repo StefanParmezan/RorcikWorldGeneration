@@ -15,5 +15,8 @@
   "block.rwg.dry_grass": "Dry Grass",
   "block.rwg.budding_diorite": "Budding Diorite",
 
-  "itemGroup.rwg": "Rorcik World Generation"
+  "itemGroup.rwg": "Rorcik World Generation",
+
+  "biome.rwg.plains_city": "Dead city",
+  "biome.rwg.desert_city": "Abandoned Slums"
 }

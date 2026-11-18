@@ -8,7 +8,6 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.level.GrassColor;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -17,8 +16,14 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
+import ru.rorcik.core.zone.BiomeZoneRegistry;
+import ru.rorcik.core.zone.TemperatureZone;
 import ru.rorcik.rwg.world.RwgTerrablender;
 import ru.rorcik.rwg.world.feature.RwgFeatures;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Mod(RwgMod.MODID)
 public class RwgMod {
@@ -28,21 +33,30 @@ public class RwgMod {
     public RwgMod(FMLJavaModLoadingContext context) {
         IEventBus modEventBus = context.getModEventBus();
         modEventBus.addListener(this::commonSetup);
-
         RwgBlocks.BLOCKS.register(modEventBus);
         RwgBlocks.ITEMS.register(modEventBus);
         RwgBlocks.CREATIVE_MODE_TABS.register(modEventBus);
         RwgFeatures.FEATURES.register(modEventBus);
-
         ru.rorcik.rwg.world.biomemodifier.RwgBiomeModifiers.SERIALIZERS.register(modEventBus);
-
+        RwgBiomes.BIOMES.register(modEventBus);
         MinecraftForge.EVENT_BUS.register(this);
         context.registerConfig(ModConfig.Type.COMMON, RwgConfig.SPEC);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
-        LOGGER.info("Rorcik World Generation initialized");
-
+        if (RwgConfig.enableLogging) {
+            LOGGER.info("Info: Rorcik World Generation initialized");
+        }
+        BiomeZoneRegistry.register(biomeId -> {
+            for (Map.Entry<String, List<? extends String>> entry : RwgConfig.ZONE_BIOMES.entrySet()) {
+                if (entry.getValue().contains(biomeId.toString())) {
+                    String zoneKey = entry.getKey();
+                    String tempZone = zoneKey.split("\\.")[0];
+                    return Optional.of(TemperatureZone.valueOf(tempZone.toUpperCase()));
+                }
+            }
+            return Optional.empty();
+        });
         event.enqueueWork(RwgTerrablender::init);
     }
 
@@ -53,17 +67,14 @@ public class RwgMod {
         public static void onClientSetup(FMLClientSetupEvent event) {
             event.enqueueWork(() -> {
                 Minecraft mc = Minecraft.getInstance();
-
                 ItemBlockRenderTypes.setRenderLayer(RwgBlocks.GRASS_SLAB.get(), RenderType.cutoutMipped());
                 ItemBlockRenderTypes.setRenderLayer(RwgBlocks.DIRT_PATH_SLAB.get(), RenderType.cutoutMipped());
-
                 mc.getBlockColors().register((state, level, pos, tintIndex) -> {
                     if (level != null && pos != null) {
                         return BiomeColors.getAverageGrassColor(level, pos);
                     }
                     return GrassColor.getDefaultColor();
                 }, RwgBlocks.GRASS_SLAB.get());
-
                 mc.getItemColors().register((stack, tintIndex) -> {
                     return GrassColor.getDefaultColor();
                 }, RwgBlocks.GRASS_SLAB_ITEM.get());
