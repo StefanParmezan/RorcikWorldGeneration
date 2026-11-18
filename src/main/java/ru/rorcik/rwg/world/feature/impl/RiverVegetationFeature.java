@@ -14,6 +14,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
+import ru.rorcik.rwg.world.feature.util.StructureGuard;
 
 public class RiverVegetationFeature extends Feature<NoneFeatureConfiguration> {
 
@@ -33,7 +34,14 @@ public class RiverVegetationFeature extends Feature<NoneFeatureConfiguration> {
         WorldGenLevel level = context.level();
         BlockPos origin = context.origin();
         RandomSource random = context.random();
+
+        if (StructureGuard.isInCity(level, origin)) return false;
+
         boolean placedAnything = false;
+
+        StructureGuard guard = StructureGuard.forArea(level,
+                origin.getX() - SEARCH_RADIUS, origin.getZ() - SEARCH_RADIUS,
+                origin.getX() + SEARCH_RADIUS, origin.getZ() + SEARCH_RADIUS);
 
         for (int dx = -SEARCH_RADIUS; dx <= SEARCH_RADIUS; dx++) {
             for (int dz = -SEARCH_RADIUS; dz <= SEARCH_RADIUS; dz++) {
@@ -67,6 +75,11 @@ public class RiverVegetationFeature extends Feature<NoneFeatureConfiguration> {
                         depthCursor.move(Direction.UP);
                     }
                     BlockPos waterSurface = depthCursor.below();
+
+                    if (guard.intersects(x, bottomWaterPos.getY(), z,
+                            x, waterSurface.getY() + 1, z)) {
+                        continue;
+                    }
 
                     if (waterDepth >= 2 && random.nextFloat() < KELP_CHANCE) {
                         placeKelp(level, bottomWaterPos, waterDepth, random);

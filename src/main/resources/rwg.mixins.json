@@ -5,12 +5,17 @@
   "compatibilityLevel": "JAVA_17",
   "refmap": "rwg.refmap.json",
   "mixins": [
+    "BiomeGenerationMixin",
     "BiomeMixin",
+    "ChunkAccessMixin",
+    "ChunkGeneratorMixin",
     "CountPlacementAccessor",
+    "LevelChunkSectionAccessor",
     "MinecraftServerMixin",
     "OreConfigurationMixin",
     "OverworldBiomeBuilderMixin",
-    "PlacedFeatureMixin"
+    "PlacedFeatureMixin",
+    "StructureMixin"
   ],
   "client": [],
   "injectors": {

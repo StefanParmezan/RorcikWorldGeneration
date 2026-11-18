@@ -31,8 +31,5 @@ public class RwgFeatures {
             FEATURES.register("earthy_patches", () -> new EarthyPatchesFeature(NoneFeatureConfiguration.CODEC));
 
     public static final RegistryObject<Feature<NoneFeatureConfiguration>> RIVER_SHORE_SMOOTHING =
-            FEATURES.register("river_shore_smoothing", () -> {
-                RwgMod.LOGGER.info("[RWG-RIVER] registering river_shore_smoothing feature");
-                return new RiverShoreSmoothingFeature(NoneFeatureConfiguration.CODEC);
-            });
+            FEATURES.register("river_shore_smoothing", () -> new RiverShoreSmoothingFeature(NoneFeatureConfiguration.CODEC));
 }

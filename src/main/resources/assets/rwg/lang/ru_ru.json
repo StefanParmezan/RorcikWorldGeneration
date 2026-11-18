@@ -15,5 +15,8 @@
   "block.rwg.dry_grass": "Сухая трава",
   "block.rwg.budding_diorite": "Насыщенный кварцом диорит",
 
-  "itemGroup.rwg": "Rorcik World Generation"
+  "itemGroup.rwg": "Rorcik World Generation",
+
+  "biome.rwg.plains_city": "Город призрак",
+  "biome.rwg.desert_city": "Заброшенные трущобы"
 }

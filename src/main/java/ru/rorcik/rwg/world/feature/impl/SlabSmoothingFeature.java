@@ -4,17 +4,22 @@ import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.block.AttachedStemBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.PointedDripstoneBlock;
 import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.StemBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.SlabType;
-import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
-import net.minecraft.world.phys.shapes.VoxelShape;
 import ru.rorcik.rwg.RwgBlocks;
+import ru.rorcik.rwg.block.QuartzClusterBlock;
+import ru.rorcik.rwg.world.feature.util.DoublePlantHelper;
+import ru.rorcik.rwg.world.feature.util.StructureGuard;
+import ru.rorcik.rwg.world.feature.util.SurfaceFinder;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -79,8 +84,13 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
         WorldGenLevel level = context.level();
         BlockPos origin = context.origin();
 
+        if (StructureGuard.isInCity(level, origin)) return false;
+
         int chunkMinX = origin.getX() & ~15;
         int chunkMinZ = origin.getZ() & ~15;
+
+        StructureGuard guard = StructureGuard.forArea(level,
+                chunkMinX, chunkMinZ, chunkMinX + 15, chunkMinZ + 15);
 
         BlockPos[] groundPos = new BlockPos[16 * 16];
         for (int lx = 0; lx < 16; lx++) {
@@ -90,7 +100,6 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
         }
 
         int placed = 0;
-
         int[][] dirs     = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
         int[][] opposite = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
 
@@ -133,13 +142,19 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
                 if (!shouldPlace) continue;
 
                 BlockPos abovePos = ground.above();
+                if (guard.contains(ground) || guard.contains(abovePos)) continue;
                 BlockState aboveState = level.getBlockState(abovePos);
 
                 if (aboveState.is(BlockTags.LOGS)) continue;
                 if (aboveState.is(BlockTags.LEAVES)) continue;
                 if (aboveState.is(Blocks.BEDROCK)) continue;
                 if (!aboveState.getFluidState().isEmpty()) continue;
+
                 if (!canReplaceAbove(level, abovePos, aboveState)) continue;
+
+                if (DoublePlantHelper.isHalf(aboveState)) {
+                    DoublePlantHelper.clearWholePlant(level, abovePos, aboveState);
+                }
 
                 level.setBlock(abovePos, slabState, 3);
                 placed++;
@@ -150,10 +165,11 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     private BlockPos findGround(WorldGenLevel level, int x, int z) {
-        int startY = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z);
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(x, startY, z);
+        int startY = SurfaceFinder.findSurfaceY(level, x, z);
+        if (startY == Integer.MIN_VALUE) return null;
 
-        for (int i = 0; i < 6; i++) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(x, startY, z);
+        for (int i = 0; i < 6 && pos.getY() >= level.getMinBuildHeight(); i++) {
             BlockState s = level.getBlockState(pos);
             if (isWaterloggedSlab(s)) return pos.immutable();
             if (getSlabStateFor(s) != null) return pos.immutable();
@@ -172,8 +188,29 @@ public class SlabSmoothingFeature extends Feature<NoneFeatureConfiguration> {
         if (state.isAir()) return true;
         if (state.is(Blocks.SNOW)) return true;
 
-        VoxelShape shape = state.getCollisionShape(level, pos);
-        return shape.isEmpty();
+        if (state.is(BlockTags.CROPS)) return false;
+        if (state.getBlock() instanceof StemBlock) return false;
+        if (state.getBlock() instanceof AttachedStemBlock) return false;
+        if (state.getBlock() instanceof PointedDripstoneBlock) return false;
+        if (state.getBlock() instanceof QuartzClusterBlock) return false;
+
+        if (state.is(BlockTags.REPLACEABLE_BY_TREES)) return true;
+        if (state.is(BlockTags.SAPLINGS)) return true;
+        if (state.is(BlockTags.FLOWERS)) return true;
+        if (state.is(BlockTags.TALL_FLOWERS)) return true;
+
+        if (state.getCollisionShape(level, pos).isEmpty()) {
+            
+            if (state.hasBlockEntity()) return false;
+
+            if (state.is(Blocks.END_PORTAL) || state.is(Blocks.END_GATEWAY) || state.is(Blocks.BARRIER) || state.is(Blocks.LIGHT)) {
+                return false;
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     private BlockState getSlabStateFor(BlockState state) {

@@ -2,5 +2,9 @@
   "type": "rwg:config_feature",
   "feature_key": "boulder",
   "placed_feature": "rwg:boulder",
-  "step": "vegetal_decoration"
+  "step": "top_layer_modification",
+  "biomes": {
+    "type": "forge:any",
+    "except": ["rwg:plains_city", "rwg:desert_city"]
+  }
 }

@@ -1,0 +1,6 @@
+{
+  "type": "rwg:lso_feature_removal",
+  "biomes": "#forge:is_hot/overworld",
+  "features": "#rwg:lso_sun_fern_placed",
+  "config_key": "sun_fern"
+}

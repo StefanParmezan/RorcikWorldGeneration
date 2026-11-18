@@ -1,11 +1,20 @@
 package ru.rorcik.rwg.mixin;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.tags.BiomeTags;
+import net.minecraft.util.RandomSource;
 import net.minecraft.util.valueproviders.ConstantInt;
 import net.minecraft.util.valueproviders.IntProvider;
+import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.chunk.ChunkGenerator;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
 import net.minecraft.world.level.levelgen.feature.configurations.OreConfiguration;
 import net.minecraft.world.level.levelgen.placement.CountPlacement;
+import net.minecraft.world.level.levelgen.placement.HeightmapPlacement;
 import net.minecraft.world.level.levelgen.placement.PlacementModifier;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.levelgen.placement.RarityFilter;
@@ -17,6 +26,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import ru.rorcik.rwg.RwgConfig;
+import ru.rorcik.rwg.world.feature.impl.RiverVegetationFeature;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,6 +50,49 @@ public abstract class PlacedFeatureMixin {
             rwg$scaled = true;
             rwg$scaleNow();
         }
+    }
+
+    @Inject(method = "placeWithBiomeCheck", at = @At("HEAD"), cancellable = true)
+    private void rwg$skipLandFeaturesOnWater(
+            WorldGenLevel level, ChunkGenerator generator, RandomSource random,
+            BlockPos pos, CallbackInfoReturnable<Boolean> cir) {
+
+        int x = pos.getX();
+        int z = pos.getZ();
+        int topY = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) - 1;
+        if (topY < level.getMinBuildHeight()) return;
+
+        BlockState topState = level.getBlockState(new BlockPos(x, topY, z));
+        if (topState.getFluidState().isEmpty()) return;
+
+        if (feature.value().feature() instanceof RiverVegetationFeature) return;
+
+        boolean heightmapPlaced = false;
+        for (PlacementModifier modifier : placement) {
+            if (modifier instanceof HeightmapPlacement) {
+                heightmapPlaced = true;
+                break;
+            }
+        }
+        if (!heightmapPlaced && pos.getY() < topY - 1) return;
+
+        Holder<Biome> biome = level.getBiome(pos);
+        if (rwg$isWaterBiome(biome)) return;
+
+        cir.setReturnValue(false);
+    }
+
+    private static boolean rwg$isWaterBiome(Holder<Biome> biome) {
+        if (biome.is(BiomeTags.IS_OCEAN) || biome.is(BiomeTags.IS_RIVER)) return true;
+
+        String id = biome.unwrapKey()
+                .map(key -> key.location().getPath())
+                .orElse("");
+        return id.contains("swamp")
+                || id.contains("marsh")
+                || id.contains("bayou")
+                || id.contains("floodplain")
+                || id.contains("wetland");
     }
 
     private void rwg$scaleNow() {

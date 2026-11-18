@@ -16,6 +16,8 @@ import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import ru.rorcik.rwg.RwgConfig;
+import ru.rorcik.rwg.world.feature.util.DoublePlantHelper;
+import ru.rorcik.rwg.world.feature.util.StructureGuard;
 import ru.rorcik.rwg.world.feature.util.SurfaceFinder;
 
 import java.util.ArrayList;
@@ -62,6 +64,7 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
         BlockPos origin = context.origin();
         RandomSource random = context.random();
 
+        if (StructureGuard.isInCity(level, origin)) return false;
         if (random.nextFloat() >= SPAWN_CHANCE) return false;
 
         BlockPos surfacePos = SurfaceFinder.findSurface(level, origin.getX(), origin.getZ());
@@ -72,6 +75,11 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
         boolean isXAxis = random.nextBoolean();
         Direction.Axis axis = isXAxis ? Direction.Axis.X : Direction.Axis.Z;
 
+        StructureGuard guard = StructureGuard.forArea(level,
+                surfacePos.getX() - 3, surfacePos.getZ() - 3,
+                surfacePos.getX() + length + 3, surfacePos.getZ() + length + 3);
+        if (guard.contains(surfacePos)) return false;
+
         List<BlockPos> placedLogs = new ArrayList<>();
 
         for (int i = 0; i < length; i++) {
@@ -79,10 +87,14 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
             int dz = isXAxis ? 0 : i;
             BlockPos pos = surfacePos.offset(dx, 1, dz);
 
+            if (guard.contains(pos) || guard.contains(pos.below())) continue;
             BlockState existing = level.getBlockState(pos);
             if (!canLogOverride(level, pos, existing)) continue;
-
             if (!level.getBlockState(pos.below()).isSolid()) continue;
+
+            if (DoublePlantHelper.isHalf(existing)) {
+                DoublePlantHelper.clearWholePlant(level, pos, existing);
+            }
 
             Block logVariant = (random.nextFloat() < STRIPPED_PER_BLOCK_CHANCE)
                     ? STRIPPED.getOrDefault(baseLog, Blocks.STRIPPED_OAK_LOG)
@@ -100,15 +112,15 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
         BlockPos lastLogPos = placedLogs.get(placedLogs.size() - 1);
 
         for (BlockPos logPos : placedLogs) {
-            tryPlaceMushroomOnLog(level, logPos, random);
+            tryPlaceMushroomOnLog(level, logPos, random, guard);
         }
 
         if (random.nextFloat() < LEAF_CAP_CHANCE) {
             placeLeafCap(level, lastLogPos,
-                    LEAVES.getOrDefault(baseLog, Blocks.OAK_LEAVES), random);
+                    LEAVES.getOrDefault(baseLog, Blocks.OAK_LEAVES), random, guard);
         }
 
-        tryPlaceMushroomOnGround(level, lastLogPos, isXAxis, random);
+        tryPlaceMushroomOnGround(level, lastLogPos, isXAxis, random, guard);
         return true;
     }
 
@@ -126,7 +138,7 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     private void placeLeafCap(WorldGenLevel level, BlockPos tip,
-                              Block leafBlock, RandomSource random) {
+                              Block leafBlock, RandomSource random, StructureGuard guard) {
         int r = 1 + random.nextInt(2);
         for (int dy = 0; dy <= r; dy++) {
             for (int dx = -r; dx <= r; dx++) {
@@ -137,6 +149,7 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
 
                     BlockPos p = tip.offset(dx, dy, dz);
                     if (p.equals(tip)) continue;
+                    if (guard.contains(p)) continue;
 
                     BlockState existing = level.getBlockState(p);
                     if (!existing.isAir() && !existing.canBeReplaced()) continue;
@@ -147,10 +160,12 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
         }
     }
 
-    private void tryPlaceMushroomOnLog(WorldGenLevel level, BlockPos logPos, RandomSource random) {
+    private void tryPlaceMushroomOnLog(WorldGenLevel level, BlockPos logPos,
+                                       RandomSource random, StructureGuard guard) {
         if (random.nextFloat() >= MUSHROOM_ON_LOG_CHANCE) return;
 
         BlockPos above = logPos.above();
+        if (guard.contains(above)) return;
         if (!level.getBlockState(above).isAir()) return;
 
         Block mushroomBlock = random.nextBoolean()
@@ -161,7 +176,7 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     private void tryPlaceMushroomOnGround(WorldGenLevel level, BlockPos lastLogPos,
-                                          boolean isXAxis, RandomSource random) {
+                                          boolean isXAxis, RandomSource random, StructureGuard guard) {
         if (random.nextFloat() >= MUSHROOM_ON_GROUND_CHANCE) return;
 
         Block mushroomBlock = random.nextBoolean()
@@ -182,6 +197,7 @@ public class FallenLogFeature extends Feature<NoneFeatureConfiguration> {
             if (!SurfaceFinder.isSolidGround(level, groundPos)) continue;
 
             BlockPos placePos = groundPos.above();
+            if (guard.contains(placePos)) continue;
             if (!level.getBlockState(placePos).isAir()) continue;
 
             if (!level.getBlockState(placePos.below()).isSolid()) continue;

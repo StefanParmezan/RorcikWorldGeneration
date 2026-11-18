@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "legendarysurvivaloverhaul:water_plant_placed",
+      "required": false
+    }
+  ]
+}

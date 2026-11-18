@@ -9,6 +9,8 @@ import ru.rorcik.rwg.RwgConfig;
 @Mixin(OreConfiguration.class)
 public abstract class OreConfigurationMixin {
 
+    private static final int MAX_VEIN_SIZE = 64;
+
     @ModifyVariable(
             method = "<init>(Ljava/util/List;IF)V",
             at = @At("HEAD"),
@@ -18,6 +20,6 @@ public abstract class OreConfigurationMixin {
     private static int rwg$scaleVeinSize(int size) {
         double mult = RwgConfig.oreVeinSizeMultiplier;
         if (mult == 1.0) return size;
-        return Math.max(1, (int) Math.round(size * mult));
+        return Math.min(MAX_VEIN_SIZE, Math.max(1, (int) Math.round(size * mult)));
     }
 }
